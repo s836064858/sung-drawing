@@ -367,12 +367,16 @@ export class CanvasCore {
    * 添加文字 (内部调用)
    */
   addText(x, y) {
+    // 根据当前缩放比例调整字号，确保视觉大小一致
+    const scale = this.app.tree.scaleX || 1
+    const fontSize = 24 / scale
+
     const text = new Text({
       x: x,
       y: y,
       text: '双击编辑文字',
       fill: '#333',
-      fontSize: 24,
+      fontSize: fontSize,
       editable: true,
       draggable: true
     })
