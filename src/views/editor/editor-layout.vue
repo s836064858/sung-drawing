@@ -39,6 +39,8 @@ const handleToolChange = (event) => {
   if (event.type === 'mode') {
     activeTool.value = event.value
     canvasCore.setMode(event.value)
+  } else if (event.type === 'action' && event.value === 'add-image') {
+    canvasCore.addImage(event.data)
   }
 }
 </script>

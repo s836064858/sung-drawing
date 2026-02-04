@@ -31,11 +31,20 @@
         <i class="ri-text"></i>
       </div>
     </el-tooltip>
+
+    <div class="divider"></div>
+
+    <el-tooltip content="插入图片" placement="top">
+      <div class="tool-item" @click="handleImageClick">
+        <i class="ri-image-line"></i>
+      </div>
+    </el-tooltip>
+    <input type="file" ref="fileInput" accept="image/*" @change="handleFileChange" style="display: none" />
   </div>
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, ref } from 'vue'
 
 const props = defineProps({
   activeTool: {
@@ -45,6 +54,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['tool-change'])
+const fileInput = ref(null)
 
 const handleToolClick = (tool) => {
   if (tool === 'text') {
@@ -56,6 +66,20 @@ const handleToolClick = (tool) => {
 
 const handleShapeCommand = (command) => {
   emit('tool-change', { type: 'mode', value: command })
+}
+
+const handleImageClick = () => {
+  fileInput.value.click()
+}
+
+const handleFileChange = (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    const url = URL.createObjectURL(file)
+    emit('tool-change', { type: 'action', value: 'add-image', data: url })
+    // Reset input
+    e.target.value = ''
+  }
 }
 </script>
 

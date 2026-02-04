@@ -1,4 +1,4 @@
-import { App, Rect, Text, Group, ChildEvent, PropertyEvent, PointerEvent, Ellipse, Polygon } from 'leafer-ui'
+import { App, Rect, Text, Group, ChildEvent, PropertyEvent, PointerEvent, Ellipse, Polygon, Image } from 'leafer-ui'
 import '@leafer-in/editor'
 import '@leafer-in/text-editor'
 import '@leafer-in/find'
@@ -72,14 +72,60 @@ export class CanvasCore {
     this.app.on(PointerEvent.DOWN, this.handlePointerDown)
     this.app.on(PointerEvent.MOVE, this.handlePointerMove)
     this.app.on(PointerEvent.UP, this.handlePointerUp)
+
+    // 监听粘贴事件
+    window.addEventListener('paste', this.handlePaste)
+
+    // 监听拖拽上传
+    if (this.app.view) {
+      this.app.view.addEventListener('dragover', this.handleDragOver)
+      this.app.view.addEventListener('drop', this.handleDrop)
+    }
+  }
+
+  handlePaste = (e) => {
+    // 忽略输入框中的粘贴
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return
+
+    const items = e.clipboardData && e.clipboardData.items
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile()
+          const url = URL.createObjectURL(blob)
+          this.addImage(url)
+          e.preventDefault()
+          break
+        }
+      }
+    }
+  }
+
+  handleDragOver = (e) => {
+    e.preventDefault()
+  }
+
+  handleDrop = (e) => {
+    e.preventDefault()
+    if (e.dataTransfer.items) {
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        if (e.dataTransfer.items[i].kind === 'file' && e.dataTransfer.items[i].type.match('^image/')) {
+          const file = e.dataTransfer.items[i].getAsFile()
+          const url = URL.createObjectURL(file)
+          // 简单处理坐标，默认放置在鼠标位置附近（相对于画布视口）
+          // 由于坐标转换比较复杂，这里暂使用 offset，后续可优化为 screenToWorld
+          this.addImage(url, { x: e.offsetX, y: e.offsetY })
+        }
+      }
+    }
   }
 
   handleTap = (e) => {
     // 如果是文本模式，点击添加文本
     if (this.mode === 'text') {
-      // 获取点击坐标
-      // Leafer 的事件对象 e 包含 x, y (世界坐标)
-      this.addText(e.x, e.y)
+      // 获取点击坐标并转换为 tree 内部坐标
+      const { x, y } = this.app.tree.getInnerPoint(e)
+      this.addText(x, y)
 
       // 添加完后切换回选择模式
       this.setMode('select')
@@ -92,13 +138,15 @@ export class CanvasCore {
       this.app.editor.cancel()
 
       this.isDrawing = true
-      this.startPoint = { x: e.x, y: e.y }
+      // 转换为 tree 内部坐标
+      const { x, y } = this.app.tree.getInnerPoint(e)
+      this.startPoint = { x, y }
 
       // 根据模式创建初始图形
       if (this.mode === 'rect') {
         this.currentDrawingShape = new Rect({
-          x: e.x,
-          y: e.y,
+          x: x,
+          y: y,
           width: 0,
           height: 0,
           fill: '#32cd79',
@@ -109,8 +157,8 @@ export class CanvasCore {
         })
       } else if (this.mode === 'ellipse') {
         this.currentDrawingShape = new Ellipse({
-          x: e.x,
-          y: e.y,
+          x: x,
+          y: y,
           width: 0,
           height: 0,
           fill: '#32cd79',
@@ -121,8 +169,8 @@ export class CanvasCore {
       } else if (this.mode === 'diamond') {
         // 菱形使用多边形，初始化时只需设置基本属性，具体点在 move 中计算
         this.currentDrawingShape = new Polygon({
-          x: e.x,
-          y: e.y,
+          x: x,
+          y: y,
           width: 0,
           height: 0,
           fill: '#32cd79',
@@ -139,8 +187,10 @@ export class CanvasCore {
 
   handlePointerMove = (e) => {
     if (this.isDrawing && this.currentDrawingShape) {
-      const currentX = e.x
-      const currentY = e.y
+      // 转换为 tree 内部坐标
+      const point = this.app.tree.getInnerPoint(e)
+      const currentX = point.x
+      const currentY = point.y
 
       // 计算新的位置和尺寸
       const width = Math.abs(currentX - this.startPoint.x)
@@ -297,6 +347,23 @@ export class CanvasCore {
   }
 
   /**
+   * 添加图片
+   */
+  addImage(url, options = {}) {
+    const image = new Image({
+      url: url,
+      x: options.x || 100,
+      y: options.y || 100,
+      editable: true,
+      draggable: true,
+      name: '图片'
+    })
+    this.app.tree.add(image)
+    this.app.editor.select(image)
+    return image
+  }
+
+  /**
    * 添加文字 (内部调用)
    */
   addText(x, y) {
@@ -328,6 +395,11 @@ export class CanvasCore {
   destroy() {
     if (this.app) {
       window.removeEventListener('keydown', this.handleKeydown)
+      window.removeEventListener('paste', this.handlePaste)
+      if (this.app.view) {
+        this.app.view.removeEventListener('dragover', this.handleDragOver)
+        this.app.view.removeEventListener('drop', this.handleDrop)
+      }
       this.app.destroy()
       this.app = null
     }
