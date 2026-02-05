@@ -8,6 +8,12 @@
 
     <div class="divider"></div>
 
+    <el-tooltip content="钢笔 (P)" placement="top">
+      <div class="tool-item" :class="{ active: activeTool === 'pen' }" @click="handleToolClick('pen')">
+        <i class="ri-pen-nib-line"></i>
+      </div>
+    </el-tooltip>
+
     <el-dropdown trigger="click" @command="handleShapeCommand">
       <span class="dropdown-trigger">
         <el-tooltip content="形状" placement="top">
@@ -71,6 +77,8 @@ const handleToolClick = (tool) => {
     emit('tool-change', { type: 'mode', value: 'frame' })
   } else if (tool === 'select') {
     emit('tool-change', { type: 'mode', value: 'select' })
+  } else if (tool === 'pen') {
+    emit('tool-change', { type: 'mode', value: 'pen' })
   }
 }
 

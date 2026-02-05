@@ -45,6 +45,12 @@ const MODE_CONFIGS = {
     editorHittable: false,
     hitChildren: true
   },
+  pen: {
+    cursor: 'crosshair',
+    editorVisible: false,
+    editorHittable: false,
+    hitChildren: true
+  },
   select: {
     cursor: 'auto',
     editorVisible: true,
@@ -128,16 +134,27 @@ export const toolMixin = {
           strokeWidth: 3,
           name: '箭头'
         }
+      },
+      pen: {
+        class: Line,
+        props: {
+          stroke: '#333333',
+          strokeWidth: 2,
+          strokeJoin: 'round',
+          strokeCap: 'round',
+          name: '钢笔'
+        }
       }
     }
 
     const config = shapeConfigs[type]
     if (!config) return null
 
-    // 直线使用 points 方式创建
-    if (type === 'line'||type === 'arrow') {
+    // 直线/箭头/钢笔使用 points 方式创建
+    if (type === 'line' || type === 'arrow' || type === 'pen') {
+      const points = type === 'pen' ? [x, y] : [x, y, x, y]
       const line = new config.class({
-        points: [x, y, x, y],
+        points,
         editable: true,
         draggable: true,
         ...config.props

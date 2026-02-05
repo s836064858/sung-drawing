@@ -1,4 +1,4 @@
-import { ChildEvent, PropertyEvent, PointerEvent } from 'leafer-ui'
+import { ChildEvent, PropertyEvent, PointerEvent, Polygon } from 'leafer-ui'
 import { EditorEvent } from '@leafer-in/editor'
 
 export const eventMixin = {
@@ -198,7 +198,7 @@ export const eventMixin = {
    * 处理鼠标按下（开始绘制形状）
    */
   handlePointerDown(e) {
-    const drawingModes = ['rect', 'ellipse', 'diamond', 'frame', 'line', 'arrow']
+    const drawingModes = ['rect', 'ellipse', 'diamond', 'frame', 'line', 'arrow', 'pen']
     if (!drawingModes.includes(this.mode)) return
 
     this.app.editor.cancel()
@@ -217,6 +217,23 @@ export const eventMixin = {
 
     const { x: currentX, y: currentY } = this.app.tree.getInnerPoint(e)
     const { x: startX, y: startY } = this.startPoint
+
+    // 钢笔的绘制（自由绘制）
+    if (this.mode === 'pen') {
+      const points = this.currentDrawingShape.points
+      // 简单平滑处理：如果新点距离上一个点太近（< 2px），则忽略
+      if (points.length >= 2) {
+        const lastX = points[points.length - 2]
+        const lastY = points[points.length - 1]
+        const dist = Math.sqrt((currentX - lastX) ** 2 + (currentY - lastY) ** 2)
+        if (dist < 2) return
+      }
+      
+      this.currentDrawingShape.set({
+        points: [...points, currentX, currentY]
+      })
+      return
+    }
 
     // 直线的绘制
     if (this.mode === 'line'||this.mode === 'arrow') {
@@ -252,8 +269,57 @@ export const eventMixin = {
     const minSize = 5
 
     if (this.currentDrawingShape) {
-      // 直线的验证
-      if (this.mode === 'line') {
+      // 钢笔的验证
+      if (this.mode === 'pen') {
+        const points = this.currentDrawingShape.points
+        if (points.length < 6) { // 至少3个点才算有效线条
+          this.currentDrawingShape.remove()
+        } else {
+          const startX = points[0]
+          const startY = points[1]
+          const endX = points[points.length - 2]
+          const endY = points[points.length - 1]
+          
+          const dx = endX - startX
+          const dy = endY - startY
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          
+          // 如果起点和终点距离小于 20，则闭合为自定义图形
+          if (dist < 20) {
+            // 闭合优化：从尾部开始修剪掉所有距离起点 < 20 的点
+            // 这样可以去除为了闭合而画的多余笔迹，使闭合更自然
+            let prunedPoints = [...points]
+            
+            // 至少保留前3个点（6个坐标）
+            while (prunedPoints.length > 6) {
+              const lastX = prunedPoints[prunedPoints.length - 2]
+              const lastY = prunedPoints[prunedPoints.length - 1]
+              const d = Math.sqrt((lastX - startX) ** 2 + (lastY - startY) ** 2)
+              
+              if (d < 20) {
+                prunedPoints.pop()
+                prunedPoints.pop()
+              } else {
+                break
+              }
+            }
+
+            const polygon = new Polygon({
+              points: prunedPoints,
+              fill: '#32cd79',
+              editable: true,
+              draggable: true,
+              name: '自定义图形'
+            })
+            this.currentDrawingShape.remove()
+            this.app.tree.add(polygon)
+            this.app.editor.select(polygon)
+          } else {
+            this.app.editor.select(this.currentDrawingShape)
+          }
+        }
+      } else if (this.mode === 'line') {
+        // 直线的验证
         const points = this.currentDrawingShape.points
         const dx = points[2] - points[0]
         const dy = points[3] - points[1]
