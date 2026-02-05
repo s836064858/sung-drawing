@@ -41,9 +41,15 @@ const updatePosition = () => {
     return
   }
 
-  // 获取元素尺寸
-  const elemWidth = element.width || 0
-  const elemHeight = element.height || 0
+  // 使用 worldBoxBounds 获取准确的世界坐标包围盒（兼容 Polygon、Frame 嵌套等情况）
+  const worldBounds = element.worldBoxBounds
+  if (!worldBounds) {
+    visible.value = false
+    return
+  }
+
+  const elemWidth = worldBounds.width
+  const elemHeight = worldBounds.height
   width.value = Math.round(elemWidth)
   height.value = Math.round(elemHeight)
 
@@ -56,10 +62,9 @@ const updatePosition = () => {
 
   const canvasRect = canvasView.getBoundingClientRect()
   
-  // 获取元素的世界坐标
-  const worldPos = canvasCore.getElementWorldPosition(element)
-  const worldX = worldPos.x
-  const worldY = worldPos.y
+  // 世界坐标
+  const worldX = worldBounds.x
+  const worldY = worldBounds.y
 
   // 获取画布的缩放和平移
   const tree = canvasCore.app.tree
