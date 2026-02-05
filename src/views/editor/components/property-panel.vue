@@ -344,11 +344,41 @@
         <div class="section-title">样式</div>
 
         <!-- Fill -->
-        <div class="style-row">
-          <div class="style-label">填充</div>
-          <div class="color-picker-wrapper" :class="{ disabled: formData.locked }">
-            <el-color-picker v-model="formData.fill" show-alpha size="small" :disabled="formData.locked" @change="(val) => updateProperty('fill', val)" />
-            <span class="color-text">{{ getDisplayColor(currentElement?.fill) }}</span>
+        <div class="style-section">
+          <div class="style-row">
+            <div class="style-label">填充</div>
+            <el-popover
+              v-model:visible="showFillPopover"
+              placement="left-start"
+              :width="320"
+              trigger="click"
+              :popper-options="{
+                modifiers: [
+                  {
+                    name: 'preventOverflow',
+                    options: {
+                      padding: 8
+                    }
+                  }
+                ]
+              }"
+            >
+              <template #reference>
+                <div class="fill-preview">
+                  <div 
+                    class="fill-preview-box" 
+                    :style="{ background: getFillPreview(formData.fill) }"
+                  ></div>
+                  <span class="fill-type-text">{{ getFillTypeText(formData.fill) }}</span>
+                </div>
+              </template>
+              <div @click.stop>
+                <GradientEditor
+                  v-model="formData.fill"
+                  @change="(val) => updateProperty('fill', val)"
+                />
+              </div>
+            </el-popover>
           </div>
         </div>
 
@@ -554,6 +584,7 @@ import { useStore } from 'vuex'
 import { Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { PropertyEvent } from 'leafer-ui'
+import GradientEditor from './gradient-editor.vue'
 import '@leafer-in/export' // 引入导出插件
 
 const store = useStore()
@@ -650,6 +681,8 @@ const currentElement = ref(null)
 const isLoadingFont = ref(false)
 const loadedFonts = new Set() // 记录已加载的字体
 const isUpdating = ref(false) // 防止循环更新
+const showFillPopover = ref(false) // 显示填充弹出框
+const showStrokePopover = ref(false) // 显示描边弹出框
 
 const selectedLayerIds = computed(() => store.state.selectedLayerIds)
 const hasSelection = computed(() => selectedLayerIds.value.length === 1)
@@ -747,8 +780,21 @@ const syncFromElement = (element) => {
   formData.opacity = Math.round((element.opacity ?? 1) * 100)
   formData.scaleX = element.scaleX ?? 1
   formData.scaleY = element.scaleY ?? 1
-  formData.fill = getColorValue(element.fill)
-  formData.stroke = getColorValue(element.stroke)
+  
+  // 处理填充颜色/渐变
+  if (typeof element.fill === 'object' && element.fill?.type) {
+    formData.fill = element.fill
+  } else {
+    formData.fill = getColorValue(element.fill)
+  }
+  
+  // 处理描边颜色/渐变
+  if (typeof element.stroke === 'object' && element.stroke?.type) {
+    formData.stroke = element.stroke
+  } else {
+    formData.stroke = getColorValue(element.stroke)
+  }
+  
   formData.strokeWidth = element.strokeWidth ?? 0
   formData.locked = element.locked ?? false
 
@@ -803,6 +849,69 @@ const getDisplayColor = (val) => {
   return val
 }
 
+// 获取填充预览
+// 获取填充预览
+const getFillPreview = (fill) => {
+  // 处理空值
+  if (!fill || fill === '') return 'transparent'
+  
+  // 处理纯色字符串
+  if (typeof fill === 'string') {
+    return fill
+  }
+  
+  // 处理渐变对象
+  if (typeof fill === 'object' && fill.type) {
+    // 检查是否有色标
+    if (!fill.stops || fill.stops.length === 0) {
+      return 'transparent'
+    }
+    
+    const stops = fill.stops.map(s => `${s.color} ${s.offset * 100}%`).join(', ')
+    
+    if (fill.type === 'linear') {
+      // 根据方向计算角度
+      let angle = 180
+      if (fill.from && fill.to) {
+        const dirMap = {
+          'top-bottom': 180,
+          'left-right': 90,
+          'top-left-bottom-right': 135,
+          'top-right-bottom-left': 225
+        }
+        const key = `${fill.from}-${fill.to}`
+        angle = dirMap[key] || 180
+      }
+      return `linear-gradient(${angle}deg, ${stops})`
+    }
+    
+    if (fill.type === 'radial') {
+      return `radial-gradient(circle, ${stops})`
+    }
+  }
+  
+  return 'transparent'
+}
+
+// 获取填充类型文本
+const getFillTypeText = (fill) => {
+  // 处理空值
+  if (!fill || fill === '') return '无'
+  
+  // 处理纯色字符串
+  if (typeof fill === 'string') {
+    return '纯色'
+  }
+  
+  // 处理渐变对象
+  if (typeof fill === 'object' && fill.type) {
+    if (fill.type === 'linear') return '线性渐变'
+    if (fill.type === 'radial') return '径向渐变'
+  }
+  
+  return '纯色'
+}
+
 // 加载远程字体
 const loadRemoteFont = async (fontName, fontUrl) => {
   if (loadedFonts.has(fontName)) return true
@@ -829,8 +938,6 @@ const loadRemoteFont = async (fontName, fontUrl) => {
 // 更新属性到元素
 const updateProperty = async (key, value) => {
   if (!currentElement.value) return
-
-  // isUpdating.value = true // 移除锁机制，确保 handlePropertyChange 能正常更新 formData
 
   try {
     if (key === 'opacity') {
@@ -860,6 +967,10 @@ const updateProperty = async (key, value) => {
       }
     } else {
       currentElement.value[key] = value
+      // 同步更新 formData，确保 UI 立即响应
+      if (key === 'fill' || key === 'stroke') {
+        formData[key] = value
+      }
     }
 
     const canvasCore = getCanvasCore()
@@ -1335,6 +1446,56 @@ onUnmounted(() => {
 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
   background-color: #409eff;
   border-color: #409eff;
+}
+
+.style-section {
+  margin-bottom: 12px;
+}
+
+.style-section .style-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.style-section .color-picker-wrapper {
+  margin-top: 8px;
+}
+
+.fill-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.fill-preview:hover {
+  background: #ebebeb;
+}
+
+.fill-preview-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+  background-image: 
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+}
+
+.fill-type-text {
+  font-size: 12px;
+  color: #666;
+  flex: 1;
 }
 
 .export-row {
