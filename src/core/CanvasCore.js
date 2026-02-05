@@ -2,6 +2,8 @@ import { initMixin } from './mixins/init'
 import { eventMixin } from './mixins/event'
 import { layerMixin } from './mixins/layer'
 import { toolMixin } from './mixins/tool'
+import { exportMixin } from './mixins/export'
+import '@leafer-in/export' // 引入导出插件
 
 /**
  * 画布核心类，负责管理 Leafer 实例和相关操作
@@ -11,23 +13,23 @@ export class CanvasCore {
     this.view = view
     this.callbacks = callbacks
     this.mode = 'select' // 当前模式: select, text, rect, ellipse, diamond, frame, line, arrow
-    
+
     // 绘制状态
     this.isDrawing = false
     this.startPoint = null
     this.currentDrawingShape = null
-    
+
     // Frame 拖拽状态
     this.isDraggingIntoFrame = false
     this.highlightedFrame = null
-    
+
     // 事件处理器引用（用于清理）
     this.eventHandlers = {}
 
     // 初始化 (在 initMixin 中定义)
     this.init()
   }
-  
+
   /**
    * 根据 ID 查找元素（带缓存优化）
    */
@@ -41,3 +43,4 @@ Object.assign(CanvasCore.prototype, initMixin)
 Object.assign(CanvasCore.prototype, eventMixin)
 Object.assign(CanvasCore.prototype, layerMixin)
 Object.assign(CanvasCore.prototype, toolMixin)
+Object.assign(CanvasCore.prototype, exportMixin)
