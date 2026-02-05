@@ -29,8 +29,8 @@ git clone https://github.com/s836064858/sung-drawing.git
 # 进入目录
 cd sung-drawing
 
-# 安装依赖
-npm install
+# 安装依赖 (由于使用了 Leafer UI 的插件库，可能会存在 peer dependency 冲突，需要添加 --legacy-peer-deps 参数)
+npm install --legacy-peer-deps
 ```
 
 ### 2. 启动开发服务器

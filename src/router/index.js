@@ -1,16 +1,22 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import EditorLayout from '../views/editor/editor-layout.vue'
+import Editor from '@/views/editor/editor-layout.vue'
+import NotFound from '@/views/NotFound.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Editor',
-    component: EditorLayout
+    component: Editor
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: NotFound
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 
