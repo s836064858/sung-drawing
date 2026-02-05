@@ -300,7 +300,7 @@
           <div class="stroke-controls">
             <div class="color-picker-wrapper">
               <el-color-picker v-model="formData.stroke" show-alpha size="small" @change="(val) => updateProperty('stroke', val)" />
-              <span class="color-text" v-if="!formData.strokeWidth">{{ getDisplayColor(currentElement?.stroke) }}</span>
+              <span class="color-text">{{ getDisplayColor(currentElement?.stroke) }}</span>
             </div>
             <div class="property-input-wrapper" style="width: 80px">
               <div class="input-label">宽度</div>
@@ -708,7 +708,7 @@ const getColorValue = (val) => {
 }
 
 const getDisplayColor = (val) => {
-  if (typeof val === 'object') return '多色'
+  if (typeof val === 'object') return ''
   if (!val) return '无'
   return val
 }
