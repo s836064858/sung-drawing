@@ -23,6 +23,8 @@
           @drag-leave="onDragLeave"
           @drop="onDrop"
           @drag-end="onDragEnd"
+          @hover-start="handleHoverStart"
+          @hover-end="handleHoverEnd"
         />
       </div>
       <!-- 空状态 -->
@@ -144,6 +146,20 @@ const handleRemove = (layer) => {
   const core = getCore()
   if (core) {
     core.removeLayer(layer.id)
+  }
+}
+
+const handleHoverStart = (layer) => {
+  const core = getCore()
+  if (core) {
+    core.highlightLayer(layer.id)
+  }
+}
+
+const handleHoverEnd = (layer) => {
+  const core = getCore()
+  if (core) {
+    core.unhighlightLayer(layer.id)
   }
 }
 </script>

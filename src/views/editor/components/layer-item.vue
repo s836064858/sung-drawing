@@ -16,6 +16,8 @@
       @dragleave="$emit('drag-leave', $event)"
       @drop.stop="$emit('drop', $event, layer)"
       @dragend="$emit('drag-end', $event)"
+      @mouseenter="$emit('hover-start', layer)"
+      @mouseleave="$emit('hover-end', layer)"
     >
       <!-- 选中指示条 -->
       <div class="active-bar" v-show="isSelected"></div>
@@ -54,7 +56,7 @@
     <!-- 递归渲染子图层 -->
     <div v-if="hasChildren && isExpanded" class="children-list">
       <LayerItem
-        v-for="child in (layer.children || []).filter(c => !c.isInternal)"
+        v-for="child in (layer.children || []).filter((c) => !c.isInternal)"
         :key="child.id"
         :layer="child"
         :depth="depth + 1"
@@ -71,6 +73,8 @@
         @drag-leave="$emit('drag-leave', $event)"
         @drop="$emit('drop', $event, child)"
         @drag-end="$emit('drag-end', $event)"
+        @hover-start="$emit('hover-start', $event)"
+        @hover-end="$emit('hover-end', $event)"
       />
     </div>
   </div>
@@ -106,7 +110,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['select', 'toggle-visible', 'toggle-lock', 'remove', 'drag-start', 'drag-over', 'drag-leave', 'drop', 'drag-end'])
+defineEmits(['select', 'toggle-visible', 'toggle-lock', 'remove', 'drag-start', 'drag-over', 'drag-leave', 'drop', 'drag-end', 'hover-start', 'hover-end'])
 
 const isExpanded = ref(true)
 

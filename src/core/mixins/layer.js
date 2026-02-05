@@ -1,3 +1,5 @@
+import { Rect } from 'leafer-ui'
+
 export const layerMixin = {
   /**
    * 同步图层列表到外部
@@ -152,5 +154,49 @@ export const layerMixin = {
 
     this.syncLayers()
     if (this.recordState) this.recordState('reorder-layer')
+  },
+
+  /**
+   * 高亮图层 (悬浮时)
+   */
+  highlightLayer(id) {
+    const element = this.findElementById(id)
+    if (!element) return
+
+    // 懒加载创建高亮框
+    if (!this.highlightShape) {
+      this.highlightShape = new Rect({
+        stroke: '#1890ff',
+        strokeWidth: 2,
+        fill: null,
+        hitChildren: false,
+        hittable: false,
+        visible: false,
+        zIndex: 9999, // 确保在最上层
+        isInternal: true // 标记为内部元素，避免被同步/导出
+      })
+      this.app.tree.add(this.highlightShape)
+    }
+
+    // 获取世界坐标包围盒
+    const bounds = element.worldBoxBounds
+
+    // 更新高亮框位置和大小
+    this.highlightShape.set({
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      visible: true
+    })
+  },
+
+  /**
+   * 取消高亮
+   */
+  unhighlightLayer(id) {
+    if (this.highlightShape) {
+      this.highlightShape.visible = false
+    }
   }
 }
