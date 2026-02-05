@@ -54,7 +54,7 @@
     <!-- 递归渲染子图层 -->
     <div v-if="hasChildren && isExpanded" class="children-list">
       <LayerItem
-        v-for="child in layer.children"
+        v-for="child in (layer.children || []).filter(c => !c.isInternal)"
         :key="child.id"
         :layer="child"
         :depth="depth + 1"

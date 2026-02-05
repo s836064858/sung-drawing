@@ -7,7 +7,7 @@
     <div class="panel-content custom-scrollbar" @dragover.prevent @drop="onPanelDrop">
       <div v-if="layers.length > 0" class="layer-list">
         <LayerItem
-          v-for="layer in layers"
+          v-for="layer in layers.filter((l) => !l.isInternal)"
           :key="layer.id"
           :layer="layer"
           :selected-ids="selectedLayerIds"
