@@ -365,19 +365,12 @@
             >
               <template #reference>
                 <div class="fill-preview">
-                  <div 
-                    class="fill-preview-box" 
-                    :style="{ background: getFillPreview(formData.fill) }"
-                  ></div>
+                  <div class="fill-preview-box" :style="{ background: getFillPreview(formData.fill) }"></div>
                   <span class="fill-type-text">{{ getFillTypeText(formData.fill) }}</span>
                 </div>
               </template>
               <div @click.stop>
-                <GradientEditor
-                  v-model="formData.fill"
-                  :element-type="currentElement?.tag"
-                  @change="(val) => updateProperty('fill', val)"
-                />
+                <GradientEditor v-model="formData.fill" :element-type="currentElement?.tag" @change="(val) => updateProperty('fill', val)" />
               </div>
             </el-popover>
           </div>
@@ -405,26 +398,19 @@
             >
               <template #reference>
                 <div class="fill-preview">
-                  <div 
-                    class="fill-preview-box" 
-                    :style="{ background: getFillPreview(formData.stroke) }"
-                  ></div>
+                  <div class="fill-preview-box" :style="{ background: getFillPreview(formData.stroke) }"></div>
                   <span class="fill-type-text">{{ getFillTypeText(formData.stroke) }}</span>
                 </div>
               </template>
               <div @click.stop>
-                <GradientEditor
-                  v-model="formData.stroke"
-                  :element-type="currentElement?.tag"
-                  @change="(val) => updateProperty('stroke', val)"
-                />
+                <GradientEditor v-model="formData.stroke" :element-type="currentElement?.tag" @change="(val) => updateProperty('stroke', val)" />
               </div>
             </el-popover>
           </div>
-          
+
           <!-- 描边宽度 -->
           <div class="style-row" style="margin-top: 8px">
-            <div class="style-label" style="width:120px">描边宽度</div>
+            <div class="style-label" style="width: 120px">描边宽度</div>
             <div class="property-input-wrapper" style="flex: 1">
               <el-input-number
                 v-model="formData.strokeWidth"
@@ -814,21 +800,21 @@ const syncFromElement = (element) => {
   formData.opacity = Math.round((element.opacity ?? 1) * 100)
   formData.scaleX = element.scaleX ?? 1
   formData.scaleY = element.scaleY ?? 1
-  
+
   // 处理填充颜色/渐变
   if (typeof element.fill === 'object' && element.fill?.type) {
     formData.fill = element.fill
   } else {
     formData.fill = getColorValue(element.fill)
   }
-  
+
   // 处理描边颜色/渐变
   if (typeof element.stroke === 'object' && element.stroke?.type) {
     formData.stroke = element.stroke
   } else {
     formData.stroke = getColorValue(element.stroke)
   }
-  
+
   formData.strokeWidth = element.strokeWidth ?? 0
   formData.locked = element.locked ?? false
 
@@ -888,21 +874,21 @@ const getDisplayColor = (val) => {
 const getFillPreview = (fill) => {
   // 处理空值
   if (!fill || fill === '') return 'transparent'
-  
+
   // 处理纯色字符串
   if (typeof fill === 'string') {
     return fill
   }
-  
+
   // 处理渐变对象
   if (typeof fill === 'object' && fill.type) {
     // 检查是否有色标
     if (!fill.stops || fill.stops.length === 0) {
       return 'transparent'
     }
-    
-    const stops = fill.stops.map(s => `${s.color} ${s.offset * 100}%`).join(', ')
-    
+
+    const stops = fill.stops.map((s) => `${s.color} ${s.offset * 100}%`).join(', ')
+
     if (fill.type === 'linear') {
       // 根据方向计算角度
       let angle = 180
@@ -918,12 +904,12 @@ const getFillPreview = (fill) => {
       }
       return `linear-gradient(${angle}deg, ${stops})`
     }
-    
+
     if (fill.type === 'radial') {
       return `radial-gradient(circle, ${stops})`
     }
   }
-  
+
   return 'transparent'
 }
 
@@ -931,18 +917,18 @@ const getFillPreview = (fill) => {
 const getFillTypeText = (fill) => {
   // 处理空值
   if (!fill || fill === '') return '无'
-  
+
   // 处理纯色字符串
   if (typeof fill === 'string') {
     return '纯色'
   }
-  
+
   // 处理渐变对象
   if (typeof fill === 'object' && fill.type) {
     if (fill.type === 'linear') return '线性渐变'
     if (fill.type === 'radial') return '径向渐变'
   }
-  
+
   return '纯色'
 }
 
@@ -1505,31 +1491,43 @@ onUnmounted(() => {
   background: #f5f5f5;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  height: 28px;
+  box-sizing: border-box;
+  flex: 1; /* Occupy remaining space */
+  border: 1px solid transparent;
 }
 
 .fill-preview:hover {
   background: #ebebeb;
+  border-color: #dcdfe6;
 }
 
 .fill-preview-box {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  border: 1px solid #dcdfe6;
-  background-image: 
-    linear-gradient(45deg, #ccc 25%, transparent 25%),
-    linear-gradient(-45deg, #ccc 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #ccc 75%),
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%),
     linear-gradient(-45deg, transparent 75%, #ccc 75%);
   background-size: 8px 8px;
-  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+  background-position:
+    0 0,
+    0 4px,
+    4px -4px,
+    -4px 0px;
+  flex-shrink: 0;
 }
 
 .fill-type-text {
   font-size: 12px;
-  color: #666;
+  color: #333;
   flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .export-row {
