@@ -5,7 +5,7 @@
       <el-radio-group v-model="gradientType" size="small" @change="handleTypeChange">
         <el-radio-button value="solid">纯色</el-radio-button>
         <el-radio-button value="linear">线性</el-radio-button>
-        <el-radio-button value="radial">径向</el-radio-button>
+        <el-radio-button v-if="props.elementType !== 'Text'" value="radial">径向</el-radio-button>
       </el-radio-group>
     </div>
 
@@ -116,6 +116,10 @@ const props = defineProps({
   modelValue: {
     type: [String, Object],
     default: '#000000'
+  },
+  elementType: {
+    type: String,
+    default: ''
   }
 })
 

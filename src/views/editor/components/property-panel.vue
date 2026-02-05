@@ -375,6 +375,7 @@
               <div @click.stop>
                 <GradientEditor
                   v-model="formData.fill"
+                  :element-type="currentElement?.tag"
                   @change="(val) => updateProperty('fill', val)"
                 />
               </div>
