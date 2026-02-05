@@ -1,4 +1,5 @@
-import { Text, Image, Rect, Ellipse, Polygon, Frame } from 'leafer-ui'
+import { Text, Image, Rect, Ellipse, Polygon, Frame, Line } from 'leafer-ui'
+import { Arrow } from '@leafer-in/arrow' 
 
 // 模式配置
 const MODE_CONFIGS = {
@@ -27,6 +28,18 @@ const MODE_CONFIGS = {
     hitChildren: true
   },
   frame: {
+    cursor: 'crosshair',
+    editorVisible: false,
+    editorHittable: false,
+    hitChildren: true
+  },
+  line: {
+    cursor: 'crosshair',
+    editorVisible: false,
+    editorHittable: false,
+    hitChildren: true
+  },
+  arrow: {
     cursor: 'crosshair',
     editorVisible: false,
     editorHittable: false,
@@ -97,13 +110,42 @@ export const toolMixin = {
           strokeWidth: 1,
           cornerRadius: 8,
           name: 'Frame',
-          overflow: 'show'  // 改为 show，让子元素可以超出边界显示
+          overflow: 'show'
+        }
+      },
+      line: {
+        class: Line,
+        props: {
+          stroke: '#333333',
+          strokeWidth: 2,
+          name: '直线'
+        }
+      },
+      arrow: {
+        class: Arrow,
+        props: {
+          stroke: '#32cd79',
+          strokeWidth: 3,
+          name: '箭头'
         }
       }
     }
 
     const config = shapeConfigs[type]
     if (!config) return null
+
+    // 直线使用 points 方式创建
+    if (type === 'line'||type === 'arrow') {
+      const line = new config.class({
+        points: [x, y, x, y],
+        editable: true,
+        draggable: true,
+        ...config.props
+      })
+      this.app.tree.add(line)
+      return line
+    }
+
 
     const shape = new config.class({
       x,

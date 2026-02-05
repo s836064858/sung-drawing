@@ -198,7 +198,7 @@ export const eventMixin = {
    * 处理鼠标按下（开始绘制形状）
    */
   handlePointerDown(e) {
-    const drawingModes = ['rect', 'ellipse', 'diamond', 'frame']
+    const drawingModes = ['rect', 'ellipse', 'diamond', 'frame', 'line', 'arrow']
     if (!drawingModes.includes(this.mode)) return
 
     this.app.editor.cancel()
@@ -217,6 +217,14 @@ export const eventMixin = {
 
     const { x: currentX, y: currentY } = this.app.tree.getInnerPoint(e)
     const { x: startX, y: startY } = this.startPoint
+
+    // 直线的绘制
+    if (this.mode === 'line'||this.mode === 'arrow') {
+      this.currentDrawingShape.set({
+        points: [startX, startY, currentX, currentY]
+      })
+      return
+    }
 
     const width = Math.abs(currentX - startX)
     const height = Math.abs(currentY - startY)
@@ -244,12 +252,38 @@ export const eventMixin = {
     const minSize = 5
 
     if (this.currentDrawingShape) {
-      const { width, height } = this.currentDrawingShape
-      
-      if (width < minSize || height < minSize) {
-        this.currentDrawingShape.remove()
+      // 直线的验证
+      if (this.mode === 'line') {
+        const points = this.currentDrawingShape.points
+        const dx = points[2] - points[0]
+        const dy = points[3] - points[1]
+        const length = Math.sqrt(dx * dx + dy * dy)
+        
+        if (length < minSize) {
+          this.currentDrawingShape.remove()
+        } else {
+          this.app.editor.select(this.currentDrawingShape)
+        }
+      } else if (this.mode === 'arrow') {
+        // 箭头的验证
+        const toPoint = this.currentDrawingShape.toPoint
+        const dx = toPoint.x - this.currentDrawingShape.x
+        const dy = toPoint.y - this.currentDrawingShape.y
+        const length = Math.sqrt(dx * dx + dy * dy)
+        
+        if (length < minSize) {
+          this.currentDrawingShape.remove()
+        } else {
+          this.app.editor.select(this.currentDrawingShape)
+        }
       } else {
-        this.app.editor.select(this.currentDrawingShape)
+        const { width, height } = this.currentDrawingShape
+        
+        if (width < minSize || height < minSize) {
+          this.currentDrawingShape.remove()
+        } else {
+          this.app.editor.select(this.currentDrawingShape)
+        }
       }
     }
 

@@ -11,7 +11,7 @@
     <el-dropdown trigger="click" @command="handleShapeCommand">
       <span class="dropdown-trigger">
         <el-tooltip content="形状" placement="top">
-          <div class="tool-item" :class="{ active: ['rect', 'diamond', 'ellipse'].includes(activeTool) }">
+          <div class="tool-item" :class="{ active: ['rect', 'diamond', 'ellipse', 'line', 'arrow'].includes(activeTool) }">
             <i class="ri-shape-line"></i>
             <i class="ri-arrow-down-s-fill arrow-icon"></i>
           </div>
@@ -22,6 +22,8 @@
           <el-dropdown-item command="rect"> <i class="ri-rectangle-line" style="margin-right: 6px"></i>矩形 </el-dropdown-item>
           <el-dropdown-item command="diamond"> <i class="ri-vip-diamond-line" style="margin-right: 6px"></i>菱形 </el-dropdown-item>
           <el-dropdown-item command="ellipse"> <i class="ri-circle-line" style="margin-right: 6px"></i>圆形 </el-dropdown-item>
+          <el-dropdown-item command="line"> <i class="ri-subtract-line" style="margin-right: 6px"></i>直线 </el-dropdown-item>
+          <el-dropdown-item command="arrow"> <i class="ri-arrow-right-line" style="margin-right: 6px"></i>箭头 </el-dropdown-item>
         </el-dropdown-menu>
       </template>
     </el-dropdown>

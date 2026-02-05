@@ -11,6 +11,7 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "@iconify/vue": "^5.0.0",
+    "@leafer-in/arrow": "^2.0.0",
     "@leafer-in/editor": "^2.0.0",
     "@leafer-in/find": "^2.0.0",
     "@leafer-in/resize": "^2.0.0",

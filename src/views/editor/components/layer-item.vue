@@ -161,6 +161,10 @@ const getTypeIcon = (type) => {
       return 'ri-group-line'
     case 'Image':
       return 'ri-image-line'
+    case 'Line':
+      return 'ri-subtract-line'
+    case 'Arrow':
+      return 'ri-arrow-right-line'
     default:
       return 'ri-file-line'
   }
