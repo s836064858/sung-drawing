@@ -35,6 +35,12 @@ const updatePosition = () => {
     return
   }
 
+  // 直线和箭头不显示尺寸
+  if (element.tag === 'Line' || element.tag === 'Arrow') {
+    visible.value = false
+    return
+  }
+
   // 获取元素尺寸
   const elemWidth = element.width || 0
   const elemHeight = element.height || 0
