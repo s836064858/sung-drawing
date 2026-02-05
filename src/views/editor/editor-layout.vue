@@ -8,6 +8,7 @@
       <div class="toolbar-container">
         <toolbar-panel :active-tool="activeTool" @tool-change="handleToolChange" />
       </div>
+      <size-info />
     </el-main>
     <el-aside width="300px">
       <property-panel />
@@ -21,6 +22,7 @@ import LayerPanel from './components/layer-panel.vue'
 import CanvasArea from './components/canvas-area.vue'
 import PropertyPanel from './components/property-panel.vue'
 import ToolbarPanel from './components/toolbar-panel.vue'
+import SizeInfo from './components/size-info.vue'
 
 const canvasAreaRef = ref(null)
 const activeTool = ref('select')
