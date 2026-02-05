@@ -123,44 +123,121 @@
                 placeholder="字重"
                 @change="(val) => updateProperty('fontWeight', val)"
               >
-                <el-option label="常规" value="normal" />
-                <el-option label="粗体" value="bold" />
-                <el-option label="细体" value="light" />
+                <el-option label="Regular" value="normal" />
+                <el-option label="Bold" value="bold" />
+                <el-option label="Light" value="light" />
+                <el-option label="Black" value="900" />
               </el-select>
             </div>
+
             <div class="property-input-wrapper">
-              <div class="input-label">字号</div>
-              <el-input-number
-                v-model="formData.fontSize"
-                :controls="false"
-                size="small"
-                class="figma-input input-with-label-2"
-                @change="(val) => updateProperty('fontSize', val)"
-              />
+              <div class="flip-actions">
+                <el-tooltip content="粗体" placement="top">
+                  <div
+                    class="icon-btn"
+                    :class="{ active: formData.fontWeight === 'bold' }"
+                    @click="updateProperty('fontWeight', formData.fontWeight === 'bold' ? 'normal' : 'bold')"
+                  >
+                    <i class="ri-bold"></i>
+                  </div>
+                </el-tooltip>
+                <el-tooltip content="斜体" placement="top">
+                  <div class="icon-btn" :class="{ active: formData.italic }" @click="updateProperty('italic', !formData.italic)">
+                    <i class="ri-italic"></i>
+                  </div>
+                </el-tooltip>
+                <el-tooltip content="下划线" placement="top">
+                  <div
+                    class="icon-btn"
+                    :class="{ active: formData.textDecoration === 'under' }"
+                    @click="updateProperty('textDecoration', formData.textDecoration === 'under' ? 'none' : 'under')"
+                  >
+                    <i class="ri-underline"></i>
+                  </div>
+                </el-tooltip>
+                <el-tooltip content="删除线" placement="top">
+                  <div
+                    class="icon-btn"
+                    :class="{ active: formData.textDecoration === 'delete' }"
+                    @click="updateProperty('textDecoration', formData.textDecoration === 'delete' ? 'none' : 'delete')"
+                  >
+                    <i class="ri-strikethrough"></i>
+                  </div>
+                </el-tooltip>
+              </div>
             </div>
 
-            <!-- Line Height & Letter Spacing -->
-            <div class="property-input-wrapper">
-              <div class="input-label">字距</div>
-              <!-- Letter Spacing -->
-              <el-input-number
-                v-model="formData.letterSpacing"
-                :controls="false"
-                size="small"
-                class="figma-input input-with-label-2"
-                @change="(val) => updateProperty('letterSpacing', val)"
-              />
+            <!-- Alignment & Decoration -->
+            <div class="property-input-wrapper" style="grid-column: span 2; justify-content: space-between; margin-bottom: 4px">
+              <div class="flip-actions">
+                <el-tooltip content="左对齐" placement="top">
+                  <div class="icon-btn" :class="{ active: formData.textAlign === 'left' }" @click="updateProperty('textAlign', 'left')">
+                    <i class="ri-align-left"></i>
+                  </div>
+                </el-tooltip>
+                <el-tooltip content="居中" placement="top">
+                  <div class="icon-btn" :class="{ active: formData.textAlign === 'center' }" @click="updateProperty('textAlign', 'center')">
+                    <i class="ri-align-center"></i>
+                  </div>
+                </el-tooltip>
+                <el-tooltip content="右对齐" placement="top">
+                  <div class="icon-btn" :class="{ active: formData.textAlign === 'right' }" @click="updateProperty('textAlign', 'right')">
+                    <i class="ri-align-right"></i>
+                  </div>
+                </el-tooltip>
+              </div>
+
+              <div class="flip-actions">
+                <el-tooltip content="顶部对齐" placement="top">
+                  <div class="icon-btn" :class="{ active: formData.verticalAlign === 'top' }" @click="updateProperty('verticalAlign', 'top')">
+                    <i class="ri-align-top"></i>
+                  </div>
+                </el-tooltip>
+                <el-tooltip content="垂直居中" placement="top">
+                  <div class="icon-btn" :class="{ active: formData.verticalAlign === 'middle' }" @click="updateProperty('verticalAlign', 'middle')">
+                    <i class="ri-align-vertically"></i>
+                  </div>
+                </el-tooltip>
+                <el-tooltip content="底部对齐" placement="top">
+                  <div class="icon-btn" :class="{ active: formData.verticalAlign === 'bottom' }" @click="updateProperty('verticalAlign', 'bottom')">
+                    <i class="ri-align-bottom"></i>
+                  </div>
+                </el-tooltip>
+              </div>
             </div>
-            <div class="property-input-wrapper">
-              <div class="input-label">行高</div>
-              <!-- Line Height (using text-spacing icon as proxy or custom) -->
-              <el-input-number
-                v-model="formData.lineHeight"
-                :controls="false"
-                size="small"
-                class="figma-input input-with-label-2"
-                @change="(val) => updateProperty('lineHeight', val)"
-              />
+
+            <!-- Line Height & Letter Spacing & Font Size -->
+            <div style="grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px">
+              <div class="property-input-wrapper">
+                <div class="input-label">字距</div>
+                <el-input-number
+                  v-model="formData.letterSpacing"
+                  :controls="false"
+                  size="small"
+                  class="figma-input input-with-label-2"
+                  @change="(val) => updateProperty('letterSpacing', val)"
+                />
+              </div>
+              <div class="property-input-wrapper">
+                <div class="input-label">字号</div>
+                <el-input-number
+                  v-model="formData.fontSize"
+                  :controls="false"
+                  size="small"
+                  class="figma-input input-with-label-2"
+                  @change="(val) => updateProperty('fontSize', val)"
+                />
+              </div>
+              <div class="property-input-wrapper">
+                <div class="input-label">行高</div>
+                <el-input-number
+                  v-model="formData.lineHeight"
+                  :controls="false"
+                  size="small"
+                  class="figma-input input-with-label-2"
+                  @change="(val) => updateProperty('lineHeight', val)"
+                />
+              </div>
             </div>
 
             <!-- Text Content -->
@@ -439,14 +516,17 @@ const formData = reactive({
   fill: '',
   stroke: '',
   strokeWidth: 0,
-  // Text properties
+  // Typography
   text: '',
   fontSize: 12,
   fontFamily: 'Arial',
   fontWeight: 'normal',
   textAlign: 'left',
+  verticalAlign: 'top',
   lineHeight: 0,
   letterSpacing: 0,
+  italic: false,
+  textDecoration: 'none',
   // Shadow properties
   shadowEnabled: false,
   shadowX: 0,
@@ -541,8 +621,11 @@ const handlePropertyChange = (e) => {
     'fontFamily',
     'fontWeight',
     'textAlign',
+    'verticalAlign',
     'lineHeight',
     'letterSpacing',
+    'italic',
+    'textDecoration',
     'shadow',
     'innerShadow'
   ]
@@ -584,8 +667,11 @@ const syncFromElement = (element) => {
     formData.fontFamily = element.fontFamily ?? 'Arial'
     formData.fontWeight = element.fontWeight ?? 'normal'
     formData.textAlign = element.textAlign ?? 'left'
+    formData.verticalAlign = element.verticalAlign ?? 'top'
     formData.lineHeight = typeof element.lineHeight === 'object' ? 0 : (element.lineHeight ?? 0)
     formData.letterSpacing = element.letterSpacing ?? 0
+    formData.italic = element.italic ?? false
+    formData.textDecoration = element.textDecoration ?? 'none'
   }
 
   // 同步阴影属性
@@ -650,9 +736,9 @@ const loadRemoteFont = async (fontName, fontUrl) => {
 
 // 更新属性到元素
 const updateProperty = async (key, value) => {
-  if (!currentElement.value || isUpdating.value) return
+  if (!currentElement.value) return
 
-  isUpdating.value = true
+  // isUpdating.value = true // 移除锁机制，确保 handlePropertyChange 能正常更新 formData
 
   try {
     if (key === 'opacity') {
@@ -661,6 +747,25 @@ const updateProperty = async (key, value) => {
       await handleFontFamilyChange(value)
     } else if (key.startsWith('shadow') || key.startsWith('innerShadow')) {
       updateShadowProperty(key, value)
+    } else if (key === 'textAlign' || key === 'verticalAlign') {
+      const el = currentElement.value
+      if (el && el.tag === 'Text') {
+        const oldBounds = { x: el.worldBoxBounds.x, y: el.worldBoxBounds.y }
+        el[key] = value
+        // 同步更新 formData，防止计算属性延迟
+        formData[key] = value
+
+        const newBounds = el.worldBoxBounds
+        const diffX = oldBounds.x - newBounds.x
+        const diffY = oldBounds.y - newBounds.y
+
+        if (diffX !== 0 || diffY !== 0) {
+          el.x += diffX
+          el.y += diffY
+        }
+      } else {
+        el[key] = value
+      }
     } else {
       currentElement.value[key] = value
     }
@@ -671,8 +776,8 @@ const updateProperty = async (key, value) => {
     }
   } finally {
     // 使用 nextTick 确保 DOM 更新后再解锁
-    await nextTick()
-    isUpdating.value = false
+    // await nextTick()
+    // isUpdating.value = false
   }
 }
 
