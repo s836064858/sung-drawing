@@ -65,6 +65,13 @@ export const eventMixin = {
    * 获取元素的世界坐标
    */
   getElementWorldPosition(element) {
+    if (element.worldTransform) {
+      return {
+        x: element.worldTransform.e,
+        y: element.worldTransform.f
+      }
+    }
+
     const x = element.x || 0
     const y = element.y || 0
     
@@ -83,6 +90,12 @@ export const eventMixin = {
    * 获取元素的尺寸
    */
   getElementSize(element) {
+    if (element.worldBoxBounds) {
+      return {
+        width: element.worldBoxBounds.width,
+        height: element.worldBoxBounds.height
+      }
+    }
     return {
       width: element.width || 0,
       height: element.height || 0
@@ -93,6 +106,13 @@ export const eventMixin = {
    * 获取元素中心点的世界坐标
    */
   getElementWorldCenter(element) {
+    if (element.worldBoxBounds) {
+      return {
+        x: element.worldBoxBounds.x + element.worldBoxBounds.width / 2,
+        y: element.worldBoxBounds.y + element.worldBoxBounds.height / 2
+      }
+    }
+
     const { x, y } = this.getElementWorldPosition(element)
     const { width, height } = this.getElementSize(element)
     
@@ -458,8 +478,9 @@ export const eventMixin = {
         draggedElement.remove()
 
         // 计算相对于 Frame 的本地坐标
-        const localX = worldX - (foundFrame.x || 0)
-        const localY = worldY - (foundFrame.y || 0)
+        const { x: frameWorldX, y: frameWorldY } = this.getElementWorldPosition(foundFrame)
+        const localX = worldX - frameWorldX
+        const localY = worldY - frameWorldY
         
         draggedElement.x = localX
         draggedElement.y = localY
