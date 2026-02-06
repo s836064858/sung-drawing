@@ -350,7 +350,7 @@
             <el-popover
               v-model:visible="showFillPopover"
               placement="left-start"
-              :width="320"
+              :width="370"
               trigger="click"
               :popper-options="{
                 modifiers: [
@@ -994,8 +994,8 @@ const updateProperty = async (key, value) => {
     }
 
     const canvasCore = getCanvasCore()
-    if (canvasCore && canvasCore.recordState) {
-      canvasCore.recordState('property-change')
+    if (canvasCore && canvasCore.debouncedRecordState) {
+      canvasCore.debouncedRecordState('property-change')
     }
   } finally {
     // 使用 nextTick 确保 DOM 更新后再解锁
@@ -1462,7 +1462,6 @@ onUnmounted(() => {
   color: #333;
   padding-left: 6px;
 }
-
 
 .style-section {
   margin-bottom: 12px;

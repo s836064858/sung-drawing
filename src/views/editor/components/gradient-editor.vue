@@ -11,22 +11,14 @@
 
     <!-- 纯色选择器 -->
     <div v-if="gradientType === 'solid'" class="solid-color-section">
-      <el-color-picker-panel 
-        v-model="solidColor" 
-        show-alpha
-        @change="handleSolidColorChange"
-      />
+      <el-color-picker-panel v-model="solidColor" show-alpha />
     </div>
 
     <!-- 渐变编辑器 -->
     <div v-else class="gradient-controls">
       <!-- 渐变预览条 -->
       <div class="gradient-preview-wrapper">
-        <div 
-          class="gradient-preview" 
-          :style="{ background: previewGradient }"
-          @click="handlePreviewClick"
-        >
+        <div class="gradient-preview" :style="{ background: previewGradient }" @click="handlePreviewClick">
           <!-- 色标控制点 -->
           <div
             v-for="(stop, index) in stops"
@@ -45,58 +37,24 @@
       <!-- 添加色标按钮 -->
       <div class="stops-header">
         <span class="stops-title">Stops</span>
-        <el-button 
-          size="small" 
-          :icon="Plus" 
-          circle 
-          @click="addStop"
-        />
+        <el-button size="small" :icon="Plus" circle @click="addStop" />
       </div>
 
       <!-- 色标列表 -->
       <div class="stops-list">
-        <div
-          v-for="(stop, index) in stops"
-          :key="index"
-          class="stop-item"
-          :class="{ active: activeStopIndex === index }"
-          @click="selectStop(index)"
-        >
+        <div v-for="(stop, index) in stops" :key="index" class="stop-item" :class="{ active: activeStopIndex === index }" @click="selectStop(index)">
           <div class="stop-position">{{ Math.round(stop.offset * 100) }}%</div>
-          <el-color-picker 
-            v-model="stop.color" 
-            show-alpha 
-            size="small"
-            :teleported="false"
-            @change="handleStopColorChange(index)"
-            @click.stop
-          />
-          <input 
-            v-model="stop.colorHex" 
-            class="color-input"
-            @input="handleColorInputChange(index, $event)"
-          />
+          <el-color-picker v-model="stop.color" show-alpha size="small" :teleported="false" @change="handleStopColorChange(index)" @click.stop />
+          <input v-model="stop.colorHex" class="color-input" @input="handleColorInputChange(index, $event)" />
           <div class="stop-opacity">{{ stop.opacity }}%</div>
-          <el-button
-            v-if="stops.length > 2"
-            size="small"
-            :icon="Minus"
-            text
-            @click.stop="removeStop(index)"
-          />
+          <el-button v-if="stops.length > 2" size="small" :icon="Minus" text @click.stop="removeStop(index)" />
         </div>
       </div>
 
       <!-- 渐变方向控制（仅线性渐变） -->
       <div v-if="gradientType === 'linear'" class="gradient-direction">
         <div class="control-label">方向</div>
-        <el-select 
-          v-model="direction" 
-          size="small" 
-          :teleported="false"
-          @change="handleDirectionChange"
-          @click.stop
-        >
+        <el-select v-model="direction" size="small" :teleported="false" @change="handleDirectionChange" @click.stop>
           <el-option label="从上到下" value="top-bottom" />
           <el-option label="从左到右" value="left-right" />
           <el-option label="从左上到右下" value="top-left-bottom-right" />
@@ -108,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { Plus, Minus } from '@element-plus/icons-vue'
 import { ElColorPickerPanel } from 'element-plus'
 
@@ -123,7 +81,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits(['update:modelValue', 'change', 'active-change'])
 
 // 渐变类型
 const gradientType = ref('solid')
@@ -135,9 +93,11 @@ const stops = ref([
 const activeStopIndex = ref(0)
 const direction = ref('top-bottom')
 const isInternalChange = ref(false) // 标记是否为内部更改
+const isSyncingFromProp = ref(false) // 标记是否正在从 props 同步
 
 // 初始化
 const initFromValue = (value) => {
+  isSyncingFromProp.value = true
   if (typeof value === 'string') {
     gradientType.value = 'solid'
     solidColor.value = value
@@ -145,7 +105,7 @@ const initFromValue = (value) => {
     if (value.type === 'linear') {
       gradientType.value = 'linear'
       if (value.stops && value.stops.length > 0) {
-        stops.value = value.stops.map(stop => ({
+        stops.value = value.stops.map((stop) => ({
           offset: stop.offset,
           color: stop.color,
           colorHex: parseColorToHex(stop.color),
@@ -157,7 +117,7 @@ const initFromValue = (value) => {
     } else if (value.type === 'radial') {
       gradientType.value = 'radial'
       if (value.stops && value.stops.length > 0) {
-        stops.value = value.stops.map(stop => ({
+        stops.value = value.stops.map((stop) => ({
           offset: stop.offset,
           color: stop.color,
           colorHex: parseColorToHex(stop.color),
@@ -170,6 +130,10 @@ const initFromValue = (value) => {
     gradientType.value = 'solid'
     solidColor.value = value || '#000000'
   }
+
+  nextTick(() => {
+    isSyncingFromProp.value = false
+  })
 }
 
 // 解析颜色为十六进制
@@ -209,11 +173,9 @@ const previewGradient = computed(() => {
   if (gradientType.value === 'solid') {
     return solidColor.value
   }
-  
-  const colorStops = stops.value
-    .map(stop => `${stop.color} ${stop.offset * 100}%`)
-    .join(', ')
-  
+
+  const colorStops = stops.value.map((stop) => `${stop.color} ${stop.offset * 100}%`).join(', ')
+
   if (gradientType.value === 'linear') {
     const angle = getAngleFromDirection(direction.value)
     return `linear-gradient(${angle}deg, ${colorStops})`
@@ -238,12 +200,12 @@ const generateGradientObject = () => {
   if (gradientType.value === 'solid') {
     return solidColor.value
   }
-  
-  const gradientStops = stops.value.map(stop => ({
+
+  const gradientStops = stops.value.map((stop) => ({
     offset: stop.offset,
     color: stop.color
   }))
-  
+
   if (gradientType.value === 'linear') {
     const dirMap = {
       'top-bottom': { from: 'top', to: 'bottom' },
@@ -252,7 +214,7 @@ const generateGradientObject = () => {
       'top-right-bottom-left': { from: 'top-right', to: 'bottom-left' }
     }
     const { from, to } = dirMap[direction.value]
-    
+
     return {
       type: 'linear',
       from,
@@ -281,10 +243,6 @@ const handleTypeChange = () => {
   emitChange()
 }
 
-const handleSolidColorChange = () => {
-  emitChange()
-}
-
 const handleDirectionChange = () => {
   emitChange()
 }
@@ -294,10 +252,8 @@ const selectStop = (index) => {
 }
 
 const addStop = () => {
-  const newOffset = stops.value.length > 0 
-    ? (stops.value[stops.value.length - 1].offset + stops.value[0].offset) / 2 
-    : 0.5
-  
+  const newOffset = stops.value.length > 0 ? (stops.value[stops.value.length - 1].offset + stops.value[0].offset) / 2 : 0.5
+
   stops.value.push({
     offset: newOffset,
     color: '#808080',
@@ -305,7 +261,7 @@ const addStop = () => {
     opacity: 100
   })
   stops.value.sort((a, b) => a.offset - b.offset)
-  activeStopIndex.value = stops.value.findIndex(s => s.offset === newOffset)
+  activeStopIndex.value = stops.value.findIndex((s) => s.offset === newOffset)
   emitChange()
 }
 
@@ -326,7 +282,7 @@ const handleColorInputChange = (index, event) => {
   // 只允许输入十六进制字符
   hex = hex.replace(/[^0-9A-F]/g, '')
   stops.value[index].colorHex = hex
-  
+
   if (/^[0-9A-F]{6}$/.test(hex)) {
     stops.value[index].color = `#${hex}`
     emitChange()
@@ -337,50 +293,44 @@ const handlePreviewClick = (event) => {
   const rect = event.currentTarget.getBoundingClientRect()
   const x = event.clientX - rect.left
   const offset = Math.max(0, Math.min(1, x / rect.width))
-  
+
   // 在点击位置插入新色标
   const newStop = {
     offset,
-    color: interpolateColor(offset),
+    color: '#808080',
     colorHex: '808080',
     opacity: 100
   }
-  
+
   stops.value.push(newStop)
   stops.value.sort((a, b) => a.offset - b.offset)
-  activeStopIndex.value = stops.value.findIndex(s => s.offset === offset)
+  activeStopIndex.value = stops.value.findIndex((s) => s.offset === offset)
   emitChange()
 }
 
 const handleStopMouseDown = (index, event) => {
   event.preventDefault()
   selectStop(index)
-  
+
   const preview = event.currentTarget.parentElement
   const rect = preview.getBoundingClientRect()
-  
+
   const onMouseMove = (e) => {
     const x = e.clientX - rect.left
     const offset = Math.max(0, Math.min(1, x / rect.width))
     stops.value[index].offset = offset
     stops.value.sort((a, b) => a.offset - b.offset)
-    activeStopIndex.value = stops.value.findIndex(s => s === stops.value[index])
+    activeStopIndex.value = stops.value.findIndex((s) => s === stops.value[index])
   }
-  
+
   const onMouseUp = () => {
     document.removeEventListener('mousemove', onMouseMove)
     document.removeEventListener('mouseup', onMouseUp)
     emitChange()
   }
-  
+
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('mouseup', onMouseUp)
-}
-
-// 插值计算颜色
-const interpolateColor = (offset) => {
-  // 简单返回灰色，实际可以根据现有色标插值
-  return '#808080'
 }
 
 const emitChange = () => {
@@ -388,6 +338,7 @@ const emitChange = () => {
   const value = generateGradientObject()
   emit('update:modelValue', value)
   emit('change', value)
+  emit('active-change', value)
   // 使用 nextTick 确保更新完成后再重置标志
   setTimeout(() => {
     isInternalChange.value = false
@@ -395,12 +346,24 @@ const emitChange = () => {
 }
 
 // 监听外部值变化
-watch(() => props.modelValue, (newVal) => {
-  // 如果是内部更改触发的，不重新初始化
-  if (!isInternalChange.value) {
-    initFromValue(newVal)
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    // 如果是内部更改触发的，不重新初始化
+    if (!isInternalChange.value) {
+      initFromValue(newVal)
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+// 监听纯色变化
+watch(solidColor, () => {
+  if (isSyncingFromProp.value) return
+  if (gradientType.value === 'solid') {
+    emitChange()
   }
-}, { immediate: true, deep: true })
+})
 </script>
 
 <style scoped>

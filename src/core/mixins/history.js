@@ -5,10 +5,26 @@ export const historyMixin = {
     this.maxHistorySteps = 50
     this.isUndoingRedoing = false
 
+    // 创建防抖版本的 recordState
+    this.debouncedRecordState = this.debounce(this.recordState, 500)
+
     // 延迟记录初始状态，确保初始化完成
     setTimeout(() => {
       this.recordState('init')
     }, 100)
+  },
+
+  /**
+   * 防抖函数
+   */
+  debounce(fn, delay) {
+    let timer = null
+    return function (...args) {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        fn.apply(this, args)
+      }, delay)
+    }
   },
 
   /**
