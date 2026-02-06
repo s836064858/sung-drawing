@@ -260,7 +260,7 @@ export const layerMixin = {
     if (!this.highlightShape) {
       this.highlightShape = new Rect({
         stroke: '#836dff',
-        strokeWidth: 2,
+        strokeWidth: 3,
         fill: null,
         hitChildren: false,
         hittable: false,
@@ -268,7 +268,12 @@ export const layerMixin = {
         zIndex: 9999, // 确保在最上层
         isInternal: true // 标记为内部元素，避免被同步/导出
       })
-      this.app.tree.add(this.highlightShape)
+      this.app.sky.add(this.highlightShape)
+    }
+
+    // 确保在 sky 层 (防止从 tree 层移动过来或初始化错误)
+    if (this.highlightShape.parent !== this.app.sky) {
+      this.app.sky.add(this.highlightShape)
     }
 
     // 获取世界坐标包围盒
@@ -304,16 +309,16 @@ export const layerMixin = {
       // 序列化选中的元素，并记录父级关系
       this.clipboard = selected.map((item) => {
         const data = this.serializeElement(item)
-        
+
         // 记录父级信息
         if (item.parent && item.parent.tag === 'Frame') {
           data._parentFrameId = item.parent.innerId
           data._isInFrame = true
         }
-        
+
         return data
       })
-      
+
       // 重置粘贴偏移计数器
       this.resetPasteOffset()
 
@@ -348,7 +353,7 @@ export const layerMixin = {
           if (data.innerId) {
             oldIdToNewElement.set(data.innerId, element)
           }
-          
+
           // 如果不在 Frame 中，或者是 Frame 本身，标记为需要添加到根节点
           if (!data._isInFrame || data.tag === 'Frame') {
             elementsToAdd.push(element)
@@ -361,12 +366,12 @@ export const layerMixin = {
         if (data._isInFrame && data._parentFrameId && data.tag !== 'Frame') {
           const element = oldIdToNewElement.get(data.innerId)
           let parentFrame = oldIdToNewElement.get(data._parentFrameId)
-          
+
           // 如果在剪贴板中找不到父 Frame，尝试在画布上查找
           if (!parentFrame) {
             parentFrame = this.findElementById(data._parentFrameId)
           }
-          
+
           if (element && parentFrame) {
             // 将元素添加到对应的 Frame 中
             parentFrame.add(element)
@@ -460,7 +465,7 @@ export const layerMixin = {
   serializeElement(element) {
     try {
       const jsonData = element.toJSON()
-      
+
       const data = {
         tag: element.tag,
         innerId: element.innerId, // 保留原始 ID 用于建立映射关系
@@ -485,10 +490,8 @@ export const layerMixin = {
 
     try {
       // 将 children 转换为数组（可能是 LeaferList 对象）
-      const childrenArray = Array.isArray(element.children) 
-        ? element.children 
-        : Array.from(element.children)
-      
+      const childrenArray = Array.isArray(element.children) ? element.children : Array.from(element.children)
+
       return childrenArray
         .filter((child) => !child.isInternal) // 过滤内部元素
         .map((child) => this.serializeElement(child))
@@ -541,7 +544,7 @@ export const layerMixin = {
       children.forEach((childData) => {
         // 跳过内部元素
         if (childData.isInternal) return
-        
+
         const childElement = this.deserializeElement(childData)
         if (childElement) {
           parent.add(childElement)
@@ -550,5 +553,5 @@ export const layerMixin = {
     } catch (error) {
       console.error('反序列化子元素失败:', error)
     }
-  },
+  }
 }
