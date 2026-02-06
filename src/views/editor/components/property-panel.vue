@@ -658,7 +658,7 @@ const formData = reactive({
   // Typography
   text: '',
   fontSize: 12,
-  fontFamily: 'Arial',
+  fontFamily: 'SimHei, STHeiti, sans-serif',
   fontWeight: 'normal',
   textAlign: 'left',
   verticalAlign: 'top',

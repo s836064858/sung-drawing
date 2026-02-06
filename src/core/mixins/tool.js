@@ -291,7 +291,8 @@ export const toolMixin = {
       fill: '#333',
       fontSize,
       editable: true,
-      draggable: true
+      draggable: true,
+      fontFamily:'SimHei, STHeiti, sans-serif'
     })
 
     this.app.tree.add(text)
