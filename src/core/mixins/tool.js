@@ -171,6 +171,10 @@ export const toolMixin = {
         draggable: true,
         ...config.props
       })
+      // 自动添加 ID 到名称
+      if (line.innerId) {
+        line.name = `${config.props.name} ${line.innerId}`
+      }
       this.app.tree.add(line)
       return line
     }
@@ -188,6 +192,11 @@ export const toolMixin = {
     // 特殊处理 Frame：自动命名并添加标题标签
     if (type === 'frame') {
       setupFrameLabel(shape)
+    } else {
+      // 其他形状自动添加 ID 到名称
+      if (shape.innerId) {
+        shape.name = `${config.props.name} ${shape.innerId}`
+      }
     }
 
     this.app.tree.add(shape)
@@ -252,6 +261,9 @@ export const toolMixin = {
         draggable: true,
         name: '图片'
       })
+      if (image.innerId) {
+        image.name = `图片 ${image.innerId}`
+      }
       this.app.tree.add(image)
       this.app.editor.select(image)
       if (this.recordState) {

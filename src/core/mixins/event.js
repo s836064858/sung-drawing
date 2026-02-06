@@ -377,6 +377,9 @@ export const eventMixin = {
               draggable: true,
               name: '自定义图形'
             })
+            if (polygon.innerId) {
+              polygon.name = `自定义图形 ${polygon.innerId}`
+            }
             this.currentDrawingShape.remove()
             this.app.tree.add(polygon)
             this.app.editor.select(polygon)
