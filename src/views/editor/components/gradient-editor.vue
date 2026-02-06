@@ -472,8 +472,8 @@ watch(() => props.modelValue, (newVal) => {
 }
 
 .color-stop.active .stop-handle {
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.3);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-light);
 }
 
 .stop-handle {
@@ -527,8 +527,8 @@ watch(() => props.modelValue, (newVal) => {
 }
 
 .stop-item.active {
-  background: #e6f7ff;
-  border: 1px solid #91d5ff;
+  background: var(--primary-color-light);
+  border: 1px solid var(--primary-color);
   padding: 5px 7px;
 }
 
@@ -558,7 +558,7 @@ watch(() => props.modelValue, (newVal) => {
 
 .color-input:focus {
   outline: none;
-  border-color: #409eff;
+  border-color: var(--primary-color);
 }
 
 .stop-opacity {

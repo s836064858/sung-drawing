@@ -4,6 +4,7 @@
       class="layer-item"
       :class="{
         active: isSelected,
+        hovered: isHovered,
         'is-dragging': draggingId === layer.id,
         'drag-over-top': dragOverId === layer.id && dropPosition === 'before',
         'drag-over-bottom': dragOverId === layer.id && dropPosition === 'after'
@@ -64,6 +65,7 @@
         :dragging-id="draggingId"
         :drag-over-id="dragOverId"
         :drop-position="dropPosition"
+        :hovered-id="hoveredId"
         @select="$emit('select', $event)"
         @toggle-visible="$emit('toggle-visible', $event)"
         @toggle-lock="$emit('toggle-lock', $event)"
@@ -107,6 +109,10 @@ const props = defineProps({
   dropPosition: {
     type: String,
     default: null
+  },
+  hoveredId: {
+    type: [String, Number],
+    default: null
   }
 })
 
@@ -121,6 +127,10 @@ const hasChildren = computed(() => {
 const isSelected = computed(() => {
   if (!props.selectedIds) return false
   return props.selectedIds.some((selId) => String(selId) === String(props.layer.id))
+})
+
+const isHovered = computed(() => {
+  return String(props.hoveredId) === String(props.layer.id)
 })
 
 const toggleExpand = () => {
@@ -178,8 +188,20 @@ const getTypeIcon = (type) => {
 }
 
 .layer-item.active {
-  background-color: var(--el-color-primary-light-9);
-  color: var(--el-color-primary);
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+}
+
+.layer-item.hovered {
+  background-color: #f3f4f6;
+  outline: 1px solid var(--primary-color);
+  outline-offset: -1px;
+}
+
+.layer-item.active.hovered {
+  background-color: var(--primary-color-light);
+  outline: 1px solid var(--primary-color);
+  outline-offset: -1px;
 }
 
 .layer-item.drag-over-top::before {

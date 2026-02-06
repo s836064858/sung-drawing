@@ -166,7 +166,7 @@ export const layerMixin = {
     // 懒加载创建高亮框
     if (!this.highlightShape) {
       this.highlightShape = new Rect({
-        stroke: '#1890ff',
+        stroke: '#836dff',
         strokeWidth: 2,
         fill: null,
         hitChildren: false,

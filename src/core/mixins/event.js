@@ -55,6 +55,10 @@ export const eventMixin = {
     this.app.on(PointerEvent.UP, this.handlePointerUp.bind(this))
     this.app.on(PointerEvent.UP, this.checkFrameIntersection.bind(this))
     this.app.on(PointerEvent.MOVE, this.updateFrameHighlight.bind(this))
+
+    // 监听画布元素悬浮事件，高亮对应图层
+    tree.on(PointerEvent.ENTER, this.handleElementHoverStart.bind(this), { capture: false })
+    tree.on(PointerEvent.LEAVE, this.handleElementHoverEnd.bind(this), { capture: false })
   },
 
   /**
@@ -513,6 +517,39 @@ export const eventMixin = {
 
       this.clearFrameHighlight()
     }, 100)
+  },
+
+  /**
+   * 处理画布元素悬浮开始（高亮对应图层）
+   */
+  handleElementHoverStart(e) {
+    const element = e.target
+    
+    // 忽略内部元素和画布本身
+    if (!element || element.isInternal || element === this.app.tree) return
+    
+    // 如果正在绘制或拖拽，不触发高亮
+    if (this.isDrawing || this.app.editor.dragging) return
+
+    // 通知外部高亮图层
+    if (this.callbacks.onLayerHover && element.innerId) {
+      this.callbacks.onLayerHover(element.innerId)
+    }
+  },
+
+  /**
+   * 处理画布元素悬浮结束（取消高亮）
+   */
+  handleElementHoverEnd(e) {
+    const element = e.target
+    
+    // 忽略内部元素和画布本身
+    if (!element || element.isInternal || element === this.app.tree) return
+
+    // 通知外部取消高亮
+    if (this.callbacks.onLayerUnhover && element.innerId) {
+      this.callbacks.onLayerUnhover(element.innerId)
+    }
   },
 
   /**

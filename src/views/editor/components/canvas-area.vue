@@ -24,6 +24,12 @@ onMounted(() => {
       },
       onModeChange: (mode) => {
         emit('mode-change', mode)
+      },
+      onLayerHover: (layerId) => {
+        store.commit('setHoveredLayerId', layerId)
+      },
+      onLayerUnhover: (layerId) => {
+        store.commit('setHoveredLayerId', null)
       }
     })
 

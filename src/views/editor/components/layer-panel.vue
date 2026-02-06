@@ -14,6 +14,7 @@
           :dragging-id="draggingId"
           :drag-over-id="dragOverId"
           :drop-position="dropPosition"
+          :hovered-id="hoveredLayerId"
           @select="handleSelect"
           @toggle-visible="handleToggleVisible"
           @toggle-lock="handleToggleLock"
@@ -54,6 +55,7 @@ const dropPosition = ref(null) // 'before' | 'after'
 // 从 Store 获取图层数据
 const layers = computed(() => store.state.layers)
 const selectedLayerIds = computed(() => store.state.selectedLayerIds)
+const hoveredLayerId = computed(() => store.state.hoveredLayerId)
 
 const getCanvasCore = inject('getCanvasCore')
 

@@ -7,7 +7,9 @@ export default createStore({
     // 图层列表 (扁平化或树形，这里简化为顶层元素列表)
     layers: [],
     // 当前选中的图层 ID 列表
-    selectedLayerIds: []
+    selectedLayerIds: [],
+    // 当前悬浮的图层 ID
+    hoveredLayerId: null
   },
   mutations: {
     setCanvasReady(state, payload) {
@@ -18,6 +20,9 @@ export default createStore({
     },
     setSelectedLayerIds(state, payload) {
       state.selectedLayerIds = payload
+    },
+    setHoveredLayerId(state, payload) {
+      state.hoveredLayerId = payload
     }
   },
   actions: {},

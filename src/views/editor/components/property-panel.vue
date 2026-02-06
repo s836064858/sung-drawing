@@ -1278,8 +1278,8 @@ onUnmounted(() => {
 }
 
 .icon-btn.active {
-  background-color: #e6f7ff;
-  color: #1890ff;
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
 }
 
 .icon-btn:hover {
@@ -1309,12 +1309,12 @@ onUnmounted(() => {
 
 :deep(.figma-input .el-input__wrapper:hover) {
   background-color: #eeeeee; /* Slightly darker on hover */
-  box-shadow: 0 0 0 1px #e0e0e0 inset !important;
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
 }
 
 :deep(.figma-input .el-input__wrapper.is-focus) {
   background-color: #fff;
-  box-shadow: 0 0 0 1px #409eff inset !important;
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
 }
 
 :deep(.figma-input.input-with-label-2 .el-input__wrapper) {
@@ -1415,7 +1415,7 @@ onUnmounted(() => {
 
 :deep(.figma-select .el-input__wrapper.is-focus) {
   background-color: #fff;
-  box-shadow: 0 0 0 1px #409eff inset !important;
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
 }
 
 :deep(.figma-textarea .el-textarea__inner) {
@@ -1429,11 +1429,11 @@ onUnmounted(() => {
 
 :deep(.figma-textarea .el-textarea__inner:hover) {
   background-color: #eeeeee;
-  box-shadow: 0 0 0 1px #e0e0e0 inset !important;
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
 }
 
 :deep(.figma-textarea .el-textarea__inner:focus) {
-  box-shadow: 0 0 0 1px #409eff inset !important;
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
   background-color: #fff;
 }
 
@@ -1463,10 +1463,6 @@ onUnmounted(() => {
   padding-left: 6px;
 }
 
-:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background-color: #409eff;
-  border-color: #409eff;
-}
 
 .style-section {
   margin-bottom: 12px;
