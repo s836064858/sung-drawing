@@ -47,6 +47,12 @@ const bindEvents = (bind = true) => {
     core.app.tree.on(MoveEvent.MOVE, scheduleUpdate)
     core.app.tree.on(ZoomEvent.ZOOM, scheduleUpdate)
     core.app.on(PropertyEvent.CHANGE, scheduleUpdate)
+    // 监听 tree 的属性变化（捕获视口平移）
+    core.app.tree.on(PropertyEvent.CHANGE, scheduleUpdate)
+
+    // 监听窗口滚动和调整大小
+    window.addEventListener('scroll', scheduleUpdate, true)
+    window.addEventListener('resize', scheduleUpdate)
   } else {
     core.app.off(DragEvent.DRAG, scheduleUpdate)
     core.app.off(ResizeEvent.RESIZE, scheduleUpdate)
@@ -54,6 +60,10 @@ const bindEvents = (bind = true) => {
     core.app.tree.off(MoveEvent.MOVE, scheduleUpdate)
     core.app.tree.off(ZoomEvent.ZOOM, scheduleUpdate)
     core.app.off(PropertyEvent.CHANGE, scheduleUpdate)
+    core.app.tree.off(PropertyEvent.CHANGE, scheduleUpdate)
+
+    window.removeEventListener('scroll', scheduleUpdate, true)
+    window.removeEventListener('resize', scheduleUpdate)
   }
 }
 
@@ -98,21 +108,12 @@ const updatePosition = () => {
 
   const canvasRect = canvasView.getBoundingClientRect()
 
-  // 世界坐标
-  const worldX = worldBounds.x
-  const worldY = worldBounds.y
-
-  // 获取画布的缩放和平移
-  const tree = canvasCore.app.tree
-  const scale = tree.scaleX || 1
-  const treeX = tree.x || 0
-  const treeY = tree.y || 0
-
-  // 计算元素在屏幕上的位置
-  const screenX = worldX * scale + treeX + canvasRect.left
-  const screenY = worldY * scale + treeY + canvasRect.top
-  const screenWidth = elemWidth * scale
-  const screenHeight = elemHeight * scale
+  // worldBoxBounds 已经是相对于 Canvas 的世界坐标（包含缩放和平移）
+  // 直接加上 Canvas 的屏幕偏移即可得到屏幕坐标
+  const screenX = worldBounds.x + canvasRect.left
+  const screenY = worldBounds.y + canvasRect.top
+  const screenWidth = worldBounds.width
+  const screenHeight = worldBounds.height
 
   // 计算尺寸信息的位置（元素底部中央下方 20px）
   left.value = screenX + screenWidth / 2
