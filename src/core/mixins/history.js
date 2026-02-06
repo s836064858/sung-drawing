@@ -113,6 +113,36 @@ export const historyMixin = {
   },
 
   /**
+   * 修复恢复后的内部元素状态
+   * 历史记录恢复时，isInternal 属性可能丢失，需要重新标记
+   */
+  fixInternalElements(parent) {
+    if (!parent.children) return
+
+    parent.children.forEach((child) => {
+      // 识别 Frame 标签
+      // 1. 检查 data 标记 (新数据)
+      // 2. 检查特征 (旧数据兼容)
+      const isFrameLabel =
+        (child.data && child.data.isFrameLabel) ||
+        (child.tag === 'Text' &&
+          parent.tag === 'Frame' &&
+          child.y === -20 &&
+          child.editable === false &&
+          child.hittable === false)
+
+      if (isFrameLabel) {
+        child.isInternal = true
+      }
+
+      // 递归处理
+      if (child.children) {
+        this.fixInternalElements(child)
+      }
+    })
+  },
+
+  /**
    * 恢复状态数据到画布
    */
   restoreState(json) {
@@ -133,6 +163,9 @@ export const historyMixin = {
         this.app.tree.add(child)
       })
     }
+
+    // 修复内部元素状态（如 Frame 的标签）
+    this.fixInternalElements(this.app.tree)
 
     // 恢复后同步图层面板
     this.syncLayers()

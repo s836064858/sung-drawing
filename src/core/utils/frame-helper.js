@@ -27,7 +27,8 @@ export function setupFrameLabel(frame, customName) {
       y: -20, // 位于 Frame 上方
       hittable: false, // 不可交互
       editable: false, // 不可编辑
-      isInternal: true // 标记为内部元素，在图层面板中隐藏
+      isInternal: true, // 标记为内部元素，在图层面板中隐藏
+      data: { isFrameLabel: true } // 添加标识数据，用于历史记录恢复时识别
     })
 
     frame.add(label)
