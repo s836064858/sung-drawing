@@ -24,6 +24,10 @@ export class CanvasCore {
     this.isDraggingIntoFrame = false
     this.highlightedFrame = null
 
+    // 剪贴板
+    this.clipboard = []
+    this.pasteOffset = 0 // 粘贴偏移计数器
+
     // 事件处理器引用（用于清理）
     this.eventHandlers = {}
 

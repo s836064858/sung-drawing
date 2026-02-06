@@ -54,6 +54,10 @@
       <div class="menu-divider"></div>
       <div class="menu-group">
         <div class="menu-label">操作</div>
+        <div class="menu-item" @click="handleMenuAction('duplicate')">
+          <span>复制图层</span>
+          <span class="shortcut">⌘D</span>
+        </div>
         <div class="menu-item" @click="handleMenuAction('rename')">重命名</div>
         <div class="menu-item" @click="handleMenuAction('toggleLock')">
           {{ contextMenuTarget?.locked ? '解锁' : '加锁' }}
@@ -112,6 +116,9 @@ const handleMenuAction = (action) => {
       break
     case 'moveBottom':
       core.moveLayerBottom(id)
+      break
+    case 'duplicate':
+      core.duplicateLayer(id)
       break
     case 'rename':
       renamingLayerId.value = id
@@ -417,6 +424,15 @@ const handleHoverEnd = (layer) => {
   font-size: 13px;
   color: #606266;
   transition: all 0.1s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.menu-item .shortcut {
+  font-size: 11px;
+  color: #909399;
+  margin-left: 16px;
 }
 
 .menu-item:hover {

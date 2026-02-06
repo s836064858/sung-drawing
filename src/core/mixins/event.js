@@ -161,25 +161,54 @@ export const eventMixin = {
   },
 
   /**
-   * 处理粘贴事件（支持粘贴图片）
+   * 处理粘贴事件（支持粘贴图片和图层）
+   * 优先级：图片 > 图层
    */
   handlePaste(e) {
     if (this.isEditableElement(e.target)) return
 
     const items = e.clipboardData?.items
-    if (!items) return
+    
+    // 如果没有剪贴板项，尝试粘贴图层
+    if (!items) {
+      if (this.clipboard && this.clipboard.length > 0) {
+        this.pasteLayer()
+        e.preventDefault()
+      }
+      return
+    }
 
+    // 优先检查是否有图片
+    const hasImage = this.tryPasteImage(items)
+    
+    if (hasImage) {
+      e.preventDefault()
+      return
+    }
+
+    // 如果没有图片，尝试粘贴图层
+    if (this.clipboard && this.clipboard.length > 0) {
+      this.pasteLayer()
+      e.preventDefault()
+    }
+  },
+
+  /**
+   * 尝试从剪贴板粘贴图片
+   * @returns {boolean} 是否成功粘贴图片
+   */
+  tryPasteImage(items) {
     for (const item of items) {
       if (item.type.startsWith('image/')) {
         const blob = item.getAsFile()
         if (blob) {
           const url = URL.createObjectURL(blob)
           this.addImage(url)
-          e.preventDefault()
-          break
+          return true
         }
       }
     }
+    return false
   },
 
   handleDragOver(e) {
@@ -294,6 +323,9 @@ export const eventMixin = {
 
     this.isDrawing = false
     const minSize = 5
+    
+    // 重置粘贴偏移计数器
+    this.resetPasteOffset()
 
     if (this.currentDrawingShape) {
       // 钢笔的验证
@@ -553,33 +585,61 @@ export const eventMixin = {
   },
 
   /**
-   * 处理键盘事件（删除等）
+   * 处理键盘事件（复制、粘贴、删除、撤销等）
    */
   handleKeydown(e) {
     if (this.isEditableElement(e.target)) return
 
-    // 撤销/恢复快捷键
-    if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+    const isMod = e.metaKey || e.ctrlKey // Cmd(Mac) 或 Ctrl(Win/Linux)
+
+    // 复制快捷键: Cmd/Ctrl + C
+    if (isMod && e.key === 'c') {
+      e.preventDefault()
+      this.copySelectedLayers()
+      return
+    }
+
+    // 快速复制快捷键: Cmd/Ctrl + D
+    if (isMod && e.key === 'd') {
+      e.preventDefault()
+      const selected = this.app.editor.list
+      
+      if (selected.length === 1) {
+        // 单选：直接复制该图层
+        this.duplicateLayer(selected[0].innerId)
+      } else if (selected.length > 1) {
+        // 多选：使用复制粘贴
+        this.copySelectedLayers()
+        this.pasteLayer()
+      }
+      return
+    }
+
+    // 撤销快捷键: Cmd/Ctrl + Z
+    if (isMod && e.key === 'z') {
       e.preventDefault()
       if (e.shiftKey) {
+        // Cmd/Ctrl + Shift + Z: 重做
         this.redo()
       } else {
+        // Cmd/Ctrl + Z: 撤销
         this.undo()
       }
       return
     }
 
-    // Redo via Cmd+Y (common on Windows, sometimes Mac)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+    // 重做快捷键: Cmd/Ctrl + Y
+    if (isMod && e.key === 'y') {
       e.preventDefault()
       this.redo()
       return
     }
 
+    // 删除快捷键: Backspace 或 Delete
     if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault()
       this.removeSelectedLayers()
       this.recordState('delete')
-      e.preventDefault()
     }
   }
 }

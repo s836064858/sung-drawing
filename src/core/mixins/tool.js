@@ -1,5 +1,6 @@
 import { Text, Image, Rect, Ellipse, Polygon, Frame, Line, PropertyEvent } from 'leafer-ui'
 import { Arrow } from '@leafer-in/arrow'
+import { setupFrameLabel } from '../utils/frame-helper'
 
 // 模式配置
 const MODE_CONFIGS = {
@@ -186,28 +187,7 @@ export const toolMixin = {
 
     // 特殊处理 Frame：自动命名并添加标题标签
     if (type === 'frame') {
-      // 1. 设置 Frame 名称
-      shape.name = `Frame ${shape.innerId}`
-
-      // 2. 创建标题标签 (显示在 Frame 上方)
-      const label = new Text({
-        text: shape.name,
-        fontSize: 12,
-        fill: '#999999',
-        x: 0,
-        y: -20, // 位于 Frame 上方
-        hittable: false, // 不可交互
-        editable: false, // 不可编辑
-        isInternal: true // 标记为内部元素，在图层面板中隐藏
-      })
-      shape.add(label)
-
-      // 3. 监听 Frame 名称变化，同步更新标签文本
-      shape.on(PropertyEvent.CHANGE, (e) => {
-        if (e.attrName === 'name') {
-          label.text = e.newValue
-        }
-      })
+      setupFrameLabel(shape)
     }
 
     this.app.tree.add(shape)
@@ -218,6 +198,9 @@ export const toolMixin = {
    * 添加图片
    */
   addImage(url, options = {}) {
+    // 重置粘贴偏移计数器
+    this.resetPasteOffset()
+    
     // 使用原生的 Image 对象预加载以获取尺寸
     const img = new window.Image()
     img.src = url
@@ -281,6 +264,9 @@ export const toolMixin = {
    * 添加文字
    */
   addText(x, y) {
+    // 重置粘贴偏移计数器
+    this.resetPasteOffset()
+    
     const scale = this.app.tree.scaleX || 1
     const fontSize = 24 / scale
 

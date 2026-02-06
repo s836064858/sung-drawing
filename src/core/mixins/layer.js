@@ -1,4 +1,22 @@
-import { Rect } from 'leafer-ui'
+import { Rect, Ellipse, Text, Image, Frame, Line, Polygon, Star, PropertyEvent } from 'leafer-ui'
+import { Arrow } from '@leafer-in/arrow'
+import { setupFrameLabel } from '../utils/frame-helper'
+
+// 复制粘贴配置
+const PASTE_OFFSET_STEP = 20 // 每次粘贴的偏移增量（px）
+
+// 支持的元素类型映射
+const ELEMENT_TYPE_MAP = {
+  Rect,
+  Ellipse,
+  Text,
+  Image,
+  Frame,
+  Line,
+  Polygon,
+  Star,
+  Arrow
+}
 
 export const layerMixin = {
   /**
@@ -144,6 +162,7 @@ export const layerMixin = {
     const list = [...selected]
     list.forEach((item) => item.remove())
     this.app.editor.cancel()
+    this.resetPasteOffset()
   },
 
   /**
@@ -159,6 +178,7 @@ export const layerMixin = {
     }
 
     this.syncSelection()
+    this.resetPasteOffset()
   },
 
   /**
@@ -271,5 +291,264 @@ export const layerMixin = {
     if (this.highlightShape) {
       this.highlightShape.visible = false
     }
-  }
+  },
+
+  /**
+   * 复制选中的图层到剪贴板
+   */
+  copySelectedLayers() {
+    const selected = this.app.editor.list
+    if (selected.length === 0) return
+
+    try {
+      // 序列化选中的元素，并记录父级关系
+      this.clipboard = selected.map((item) => {
+        const data = this.serializeElement(item)
+        
+        // 记录父级信息
+        if (item.parent && item.parent.tag === 'Frame') {
+          data._parentFrameId = item.parent.innerId
+          data._isInFrame = true
+        }
+        
+        return data
+      })
+      
+      // 重置粘贴偏移计数器
+      this.resetPasteOffset()
+
+      // 清除系统剪贴板中的图片内容
+      this.clearSystemClipboard()
+    } catch (error) {
+      console.error('复制图层失败:', error)
+    }
+  },
+
+  /**
+   * 从剪贴板粘贴图层
+   */
+  pasteLayer() {
+    if (!this.clipboard || this.clipboard.length === 0) return
+
+    try {
+      // 取消当前选中
+      this.app.editor.cancel()
+
+      // 增加偏移量
+      this.pasteOffset = (this.pasteOffset || 0) + PASTE_OFFSET_STEP
+
+      // 第一步：创建所有元素并建立映射
+      const oldIdToNewElement = new Map() // 原始 innerId -> 新元素
+      const elementsToAdd = [] // 需要添加到根节点的元素
+
+      this.clipboard.forEach((data) => {
+        const element = this.createElementFromData(data, this.pasteOffset)
+        if (element) {
+          // 建立原始 ID 到新元素的映射
+          if (data.innerId) {
+            oldIdToNewElement.set(data.innerId, element)
+          }
+          
+          // 如果不在 Frame 中，或者是 Frame 本身，标记为需要添加到根节点
+          if (!data._isInFrame || data.tag === 'Frame') {
+            elementsToAdd.push(element)
+          }
+        }
+      })
+
+      // 第二步：处理 Frame 中的元素，建立父子关系
+      this.clipboard.forEach((data) => {
+        if (data._isInFrame && data._parentFrameId && data.tag !== 'Frame') {
+          const element = oldIdToNewElement.get(data.innerId)
+          let parentFrame = oldIdToNewElement.get(data._parentFrameId)
+          
+          // 如果在剪贴板中找不到父 Frame，尝试在画布上查找
+          if (!parentFrame) {
+            parentFrame = this.findElementById(data._parentFrameId)
+          }
+          
+          if (element && parentFrame) {
+            // 将元素添加到对应的 Frame 中
+            parentFrame.add(element)
+          } else if (element) {
+            // 如果找不到父 Frame，添加到根节点
+            elementsToAdd.push(element)
+          }
+        }
+      })
+
+      // 第三步：将顶层元素添加到画布
+      elementsToAdd.forEach((element) => this.app.tree.add(element))
+
+      // 选中新创建的所有元素
+      const allNewElements = Array.from(oldIdToNewElement.values())
+      if (allNewElements.length > 0) {
+        this.app.editor.select(allNewElements)
+      }
+
+      this.syncLayers()
+      if (this.recordState) this.recordState('paste-layer')
+    } catch (error) {
+      console.error('粘贴图层失败:', error)
+    }
+  },
+
+  /**
+   * 复制指定图层（快速复制）
+   */
+  duplicateLayer(id) {
+    const element = this.findElementById(id)
+    if (!element) return
+
+    try {
+      const data = this.serializeElement(element)
+      const newElement = this.createElementFromData(data, PASTE_OFFSET_STEP)
+
+      if (newElement) {
+        // 添加到相同的父级
+        const parent = element.parent || this.app.tree
+        parent.add(newElement)
+
+        // 选中新元素
+        this.app.editor.select(newElement)
+
+        this.syncLayers()
+        if (this.recordState) this.recordState('duplicate-layer')
+      }
+    } catch (error) {
+      console.error('复制图层失败:', error)
+    }
+  },
+
+  /**
+   * 从序列化数据创建元素（带偏移）
+   * @returns {Object} { element, originalId }
+   */
+  createElementFromData(data, offset = 0) {
+    const element = this.deserializeElement(data)
+    if (element) {
+      element.x = (element.x || 0) + offset
+      element.y = (element.y || 0) + offset
+    }
+    return element
+  },
+
+  /**
+   * 重置粘贴偏移计数器
+   */
+  resetPasteOffset() {
+    this.pasteOffset = 0
+  },
+
+  /**
+   * 清除系统剪贴板
+   */
+  clearSystemClipboard() {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText('')
+      }
+    } catch (err) {
+      // 忽略错误，某些浏览器可能不支持
+      console.warn('无法清除系统剪贴板:', err)
+    }
+  },
+
+  /**
+   * 序列化元素数据（用于复制）
+   */
+  serializeElement(element) {
+    try {
+      const jsonData = element.toJSON()
+      
+      const data = {
+        tag: element.tag,
+        innerId: element.innerId, // 保留原始 ID 用于建立映射关系
+        ...jsonData
+      }
+
+      // 处理子元素
+      data.children = this.serializeChildren(element)
+
+      return data
+    } catch (error) {
+      console.error('序列化元素失败:', error)
+      return null
+    }
+  },
+
+  /**
+   * 序列化子元素列表
+   */
+  serializeChildren(element) {
+    if (!element.children) return []
+
+    try {
+      // 将 children 转换为数组（可能是 LeaferList 对象）
+      const childrenArray = Array.isArray(element.children) 
+        ? element.children 
+        : Array.from(element.children)
+      
+      return childrenArray
+        .filter((child) => !child.isInternal) // 过滤内部元素
+        .map((child) => this.serializeElement(child))
+        .filter(Boolean) // 过滤序列化失败的元素
+    } catch (error) {
+      console.error('序列化子元素失败:', error)
+      return []
+    }
+  },
+
+  /**
+   * 反序列化元素数据（用于粘贴）
+   */
+  deserializeElement(data) {
+    if (!data || !data.tag) return null
+
+    try {
+      const ElementClass = ELEMENT_TYPE_MAP[data.tag]
+      if (!ElementClass) {
+        console.warn(`不支持的元素类型: ${data.tag}`)
+        return null
+      }
+
+      // 创建新元素（移除 innerId、children 和内部标记）
+      const { innerId, children, _parentFrameId, _isInFrame, ...elementData } = data
+      const element = new ElementClass(elementData)
+
+      // 特殊处理 Frame
+      if (data.tag === 'Frame') {
+        setupFrameLabel(element)
+      }
+
+      // 递归创建子元素
+      if (children && Array.isArray(children) && children.length > 0) {
+        this.deserializeChildren(element, children)
+      }
+
+      return element
+    } catch (error) {
+      console.error('反序列化元素失败:', error)
+      return null
+    }
+  },
+
+  /**
+   * 反序列化子元素列表
+   */
+  deserializeChildren(parent, children) {
+    try {
+      children.forEach((childData) => {
+        // 跳过内部元素
+        if (childData.isInternal) return
+        
+        const childElement = this.deserializeElement(childData)
+        if (childElement) {
+          parent.add(childElement)
+        }
+      })
+    } catch (error) {
+      console.error('反序列化子元素失败:', error)
+    }
+  },
 }
