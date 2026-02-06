@@ -19,6 +19,7 @@
       @dragend="$emit('drag-end', $event)"
       @mouseenter="$emit('hover-start', layer)"
       @mouseleave="$emit('hover-end', layer)"
+      @contextmenu.prevent="$emit('context-menu', $event, layer)"
     >
       <!-- 选中指示条 -->
       <div class="active-bar" v-show="isSelected"></div>
@@ -32,7 +33,17 @@
       <!-- 图层名称 -->
       <div class="layer-info">
         <i class="type-icon" :class="getTypeIcon(layer.type)"></i>
-        <span class="name-text">{{ layer.name }}</span>
+        <input
+          v-if="isRenaming"
+          ref="renameInput"
+          v-model="tempName"
+          class="rename-input"
+          @click.stop
+          @keydown.enter.stop="confirmRename"
+          @keydown.esc.stop="cancelRename"
+          @blur="confirmRename"
+        />
+        <span v-else class="name-text">{{ layer.name }}</span>
       </div>
 
       <div class="layer-actions">
@@ -66,6 +77,7 @@
         :drag-over-id="dragOverId"
         :drop-position="dropPosition"
         :hovered-id="hoveredId"
+        :renaming-id="renamingId"
         @select="$emit('select', $event)"
         @toggle-visible="$emit('toggle-visible', $event)"
         @toggle-lock="$emit('toggle-lock', $event)"
@@ -77,13 +89,16 @@
         @drag-end="$emit('drag-end', $event)"
         @hover-start="$emit('hover-start', $event)"
         @hover-end="$emit('hover-end', $event)"
+        @context-menu="(e, l) => $emit('context-menu', e, l)"
+        @rename-confirm="(id, name) => $emit('rename-confirm', id, name)"
+        @rename-cancel="$emit('rename-cancel')"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 
 const props = defineProps({
   layer: {
@@ -113,12 +128,33 @@ const props = defineProps({
   hoveredId: {
     type: [String, Number],
     default: null
+  },
+  renamingId: {
+    type: [String, Number],
+    default: null
   }
 })
 
-defineEmits(['select', 'toggle-visible', 'toggle-lock', 'remove', 'drag-start', 'drag-over', 'drag-leave', 'drop', 'drag-end', 'hover-start', 'hover-end'])
+const emit = defineEmits([
+  'select',
+  'toggle-visible',
+  'toggle-lock',
+  'remove',
+  'drag-start',
+  'drag-over',
+  'drag-leave',
+  'drop',
+  'drag-end',
+  'hover-start',
+  'hover-end',
+  'context-menu',
+  'rename-confirm',
+  'rename-cancel'
+])
 
 const isExpanded = ref(true)
+const renameInput = ref(null)
+const tempName = ref('')
 
 const hasChildren = computed(() => {
   return props.layer.children && props.layer.children.length > 0
@@ -132,6 +168,32 @@ const isSelected = computed(() => {
 const isHovered = computed(() => {
   return String(props.hoveredId) === String(props.layer.id)
 })
+
+const isRenaming = computed(() => {
+  return props.renamingId && String(props.renamingId) === String(props.layer.id)
+})
+
+watch(isRenaming, (val) => {
+  if (val) {
+    tempName.value = props.layer.name || ''
+    nextTick(() => {
+      if (renameInput.value) {
+        renameInput.value.focus()
+        renameInput.value.select()
+      }
+    })
+  }
+})
+
+const confirmRename = () => {
+  if (isRenaming.value) {
+    emit('rename-confirm', props.layer.id, tempName.value)
+  }
+}
+
+const cancelRename = () => {
+  emit('rename-cancel')
+}
 
 const toggleExpand = () => {
   isExpanded.value = !isExpanded.value
@@ -272,6 +334,22 @@ const getTypeIcon = (type) => {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
+}
+
+.rename-input {
+  font-size: 12px;
+  line-height: 1.2;
+  border: 1px solid var(--primary-color);
+  border-radius: 2px;
+  padding: 0 4px;
+  margin: 0;
+  width: 100%;
+  height: 20px;
+  outline: none;
+  background: white;
+  color: #374151;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
 .type-icon {

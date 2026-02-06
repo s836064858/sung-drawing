@@ -1,5 +1,5 @@
 <template>
-  <div class="layer-panel" @click.stop>
+  <div class="layer-panel" @click.stop="closeContextMenu">
     <div class="panel-header">
       <i class="ri-stack-line icon"></i>
       <h3>图层</h3>
@@ -15,6 +15,7 @@
           :drag-over-id="dragOverId"
           :drop-position="dropPosition"
           :hovered-id="hoveredLayerId"
+          :renaming-id="renamingLayerId"
           @select="handleSelect"
           @toggle-visible="handleToggleVisible"
           @toggle-lock="handleToggleLock"
@@ -26,6 +27,9 @@
           @drag-end="onDragEnd"
           @hover-start="handleHoverStart"
           @hover-end="handleHoverEnd"
+          @context-menu="handleContextMenu"
+          @rename-confirm="handleRenameConfirm"
+          @rename-cancel="handleRenameCancel"
         />
       </div>
       <!-- 空状态 -->
@@ -37,15 +41,124 @@
         <div class="empty-desc">在画布上绘制或从工具栏<br />添加元素以开始创作</div>
       </div>
     </div>
+
+    <!-- 右键菜单 -->
+    <div v-if="contextMenuVisible" class="context-menu" :style="{ left: contextMenuPosition.x + 'px', top: contextMenuPosition.y + 'px' }" @click.stop>
+      <div class="menu-group">
+        <div class="menu-label">图层</div>
+        <div class="menu-item" @click="handleMenuAction('moveUp')">移动上一层</div>
+        <div class="menu-item" @click="handleMenuAction('moveDown')">移动下一层</div>
+        <div class="menu-item" @click="handleMenuAction('moveTop')">图层置顶</div>
+        <div class="menu-item" @click="handleMenuAction('moveBottom')">图层置底</div>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-group">
+        <div class="menu-label">操作</div>
+        <div class="menu-item" @click="handleMenuAction('rename')">重命名</div>
+        <div class="menu-item" @click="handleMenuAction('toggleLock')">
+          {{ contextMenuTarget?.locked ? '解锁' : '加锁' }}
+        </div>
+        <div class="menu-item" @click="handleMenuAction('toggleVisible')">
+          {{ contextMenuTarget?.visible ? '隐藏' : '显示' }}
+        </div>
+        <div class="menu-item delete" @click="handleMenuAction('delete')">删除</div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, onMounted, onUnmounted } from 'vue'
 import { useStore } from 'vuex'
 import LayerItem from './layer-item.vue'
+import { ElMessageBox } from 'element-plus'
 
 const store = useStore()
+
+// 重命名状态
+const renamingLayerId = ref(null)
+
+// 右键菜单状态
+const contextMenuVisible = ref(false)
+const contextMenuPosition = ref({ x: 0, y: 0 })
+const contextMenuTarget = ref(null)
+
+const closeContextMenu = () => {
+  contextMenuVisible.value = false
+}
+
+const handleContextMenu = (e, layer) => {
+  contextMenuVisible.value = true
+  // 简单的边界处理，防止菜单溢出屏幕（可选优化）
+  contextMenuPosition.value = { x: e.clientX, y: e.clientY }
+  contextMenuTarget.value = layer
+}
+
+const handleMenuAction = (action) => {
+  const core = getCore()
+  if (!core || !contextMenuTarget.value) return
+
+  const id = contextMenuTarget.value.id
+
+  switch (action) {
+    case 'moveUp':
+      core.moveLayerUp(id)
+      break
+    case 'moveDown':
+      core.moveLayerDown(id)
+      break
+    case 'moveTop':
+      core.moveLayerTop(id)
+      break
+    case 'moveBottom':
+      core.moveLayerBottom(id)
+      break
+    case 'rename':
+      renamingLayerId.value = id
+      break
+    case 'toggleLock':
+      core.toggleLock(id)
+      break
+    case 'toggleVisible':
+      core.toggleVisible(id)
+      break
+    case 'delete':
+      ElMessageBox.confirm('确定要删除该图层吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      })
+        .then(() => {
+          core.removeLayer(id)
+        })
+        .catch(() => {
+          // catch cancel
+        })
+      break
+  }
+
+  closeContextMenu()
+}
+
+const handleRenameConfirm = (id, newName) => {
+  const core = getCore()
+  if (core && newName && newName.trim()) {
+    core.renameLayer(id, newName.trim())
+  }
+  renamingLayerId.value = null
+}
+
+const handleRenameCancel = () => {
+  renamingLayerId.value = null
+}
+
+onMounted(() => {
+  window.addEventListener('click', closeContextMenu)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('click', closeContextMenu)
+})
 
 // 拖拽状态
 const draggingId = ref(null)
@@ -106,15 +219,26 @@ const onDrop = (e, targetLayer) => {
   }
 
   clearDragState()
+  if (e.target.style) {
+    e.target.style.opacity = ''
+  }
 }
 
 const onPanelDrop = (e) => {
+  e.preventDefault()
+  // 处理放置在面板空白处的情况（移动到顶层末尾）
+  if (draggingId.value && !dragOverId.value) {
+    const core = getCore()
+    // 暂时未实现移动到根节点的逻辑，或者复用 reorderLayer
+  }
   clearDragState()
 }
 
 const onDragEnd = (e) => {
-  e.target.style.opacity = ''
   clearDragState()
+  if (e.target.style) {
+    e.target.style.opacity = ''
+  }
 }
 
 const clearDragState = () => {
@@ -260,8 +384,58 @@ const handleHoverEnd = (layer) => {
 
 .empty-desc {
   font-size: 12px;
-  color: #6b7280;
   text-align: center;
   line-height: 1.5;
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 9999;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #ebeef5;
+  padding: 4px 0;
+  min-width: 120px;
+}
+
+.menu-group {
+  padding: 4px 0;
+}
+
+.menu-label {
+  padding: 0 12px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 24px;
+}
+
+.menu-item {
+  padding: 0 12px;
+  line-height: 32px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #606266;
+  transition: all 0.1s;
+}
+
+.menu-item:hover {
+  background-color: #f5f7fa;
+  color: var(--el-color-primary);
+}
+
+.menu-item.delete {
+  color: #ef4444; /* red-500 */
+}
+
+.menu-item.delete:hover {
+  background-color: #fee2e2; /* red-100 */
+  color: #dc2626; /* red-600 */
+}
+
+.menu-divider {
+  height: 1px;
+  background-color: #ebeef5;
+  margin: 2px 0;
 }
 </style>

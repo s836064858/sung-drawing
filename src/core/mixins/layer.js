@@ -44,10 +44,83 @@ export const layerMixin = {
    * 获取图层显示名称
    */
   getLayerName(child) {
+    if (child.name) return child.name
     if (child.tag === 'Text') {
       return child.text || '文本'
     }
-    return child.name || child.tag || child.innerId
+    return child.tag || child.innerId
+  },
+
+  /**
+   * 上移图层
+   */
+  moveLayerUp(id) {
+    const element = this.findElementById(id)
+    if (!element || !element.parent) return
+
+    const parent = element.parent
+    const index = parent.children.indexOf(element)
+
+    if (index < parent.children.length - 1) {
+      parent.add(element, index + 1)
+      this.syncLayers()
+      if (this.recordState) this.recordState('move-layer-up')
+    }
+  },
+
+  /**
+   * 下移图层
+   */
+  moveLayerDown(id) {
+    const element = this.findElementById(id)
+    if (!element || !element.parent) return
+
+    const parent = element.parent
+    const index = parent.children.indexOf(element)
+
+    if (index > 0) {
+      parent.add(element, index - 1)
+      this.syncLayers()
+      if (this.recordState) this.recordState('move-layer-down')
+    }
+  },
+
+  /**
+   * 置顶图层
+   */
+  moveLayerTop(id) {
+    const element = this.findElementById(id)
+    if (!element || !element.parent) return
+
+    const parent = element.parent
+    parent.add(element)
+    this.syncLayers()
+    if (this.recordState) this.recordState('move-layer-top')
+  },
+
+  /**
+   * 置底图层
+   */
+  moveLayerBottom(id) {
+    const element = this.findElementById(id)
+    if (!element || !element.parent) return
+
+    const parent = element.parent
+    parent.add(element, 0)
+    this.syncLayers()
+    if (this.recordState) this.recordState('move-layer-bottom')
+  },
+
+  /**
+   * 重命名图层
+   */
+  renameLayer(id, name) {
+    const element = this.findElementById(id)
+    if (element) {
+      element.name = name
+      this.syncLayers()
+      if (this.recordState) this.recordState('rename-layer')
+    }
   },
 
   /**
