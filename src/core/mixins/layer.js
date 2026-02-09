@@ -27,7 +27,7 @@ export const layerMixin = {
 
     const excludedTags = new Set(['SimulateElement'])
     const layers = this.app.tree.children
-      .filter((child) => !excludedTags.has(child.tag) && !child.isInternal)
+      .filter((child) => !excludedTags.has(child.tag) && !child.isInternal && !child.isFrameLabel)
       .map((child) => this.formatLayerData(child))
       .reverse()
 
@@ -50,7 +50,7 @@ export const layerMixin = {
     // 如果是 Frame，递归处理子图层
     if (child.tag === 'Frame' && child.children && child.children.length > 0) {
       layerData.children = child.children
-        .filter((subChild) => !subChild.isInternal)
+        .filter((subChild) => !subChild.isInternal && !(subChild.data && subChild.data.isFrameLabel))
         .map((subChild) => this.formatLayerData(subChild))
         .reverse()
     }
