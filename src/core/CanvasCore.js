@@ -41,6 +41,15 @@ export class CanvasCore {
   findElementById(id) {
     return this.app?.tree?.findOne((child) => child.innerId === id)
   }
+
+  /**
+   * 切换标尺显示状态
+   */
+  toggleRuler(enabled) {
+    if (this.ruler) {
+      this.ruler.enabled = enabled
+    }
+  }
 }
 
 // 挂载 Mixins 到原型链

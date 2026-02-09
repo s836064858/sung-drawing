@@ -95,6 +95,8 @@ const handleToolChange = (event) => {
       canvasCore.undo()
     } else if (event.value === 'redo') {
       canvasCore.redo()
+    } else if (event.value === 'toggle-ruler') {
+      canvasCore.toggleRuler(event.data)
     }
   }
 }

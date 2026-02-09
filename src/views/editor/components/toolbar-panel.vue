@@ -73,6 +73,14 @@
       </div>
     </el-tooltip>
     <input type="file" ref="fileInput" accept="image/*" @change="handleFileChange" style="display: none" />
+
+    <div class="divider"></div>
+
+    <el-tooltip content="标尺" placement="top">
+      <div class="tool-item" :class="{ active: showRuler }" @click="handleRulerClick">
+        <i class="ri-ruler-2-line"></i>
+      </div>
+    </el-tooltip>
   </div>
 </template>
 
@@ -96,6 +104,7 @@ const props = defineProps({
 
 const emit = defineEmits(['tool-change'])
 const fileInput = ref(null)
+const showRuler = ref(true)
 
 const handleToolClick = (tool) => {
   if (tool === 'text') {
@@ -126,11 +135,19 @@ const handleImageClick = () => {
 const handleFileChange = (e) => {
   const file = e.target.files[0]
   if (file) {
-    const url = URL.createObjectURL(file)
-    emit('tool-change', { type: 'action', value: 'add-image', data: url })
-    // Reset input
-    e.target.value = ''
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      emit('tool-change', { type: 'action', value: 'add-image', data: e.target.result })
+    }
+    reader.readAsDataURL(file)
   }
+  // 清空 input 以便重复选择同一文件
+  e.target.value = ''
+}
+
+const handleRulerClick = () => {
+  showRuler.value = !showRuler.value
+  emit('tool-change', { type: 'action', value: 'toggle-ruler', data: showRuler.value })
 }
 </script>
 
