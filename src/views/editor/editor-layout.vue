@@ -9,9 +9,22 @@
       </div>
 
       <div class="left-panel-content">
-        <page-list />
-        <div class="layer-panel-container">
-          <layer-panel />
+        <!-- 顶部 Tab 切换 -->
+        <div class="panel-tabs">
+          <div class="tab-item" :class="{ active: activeTab === 'layers' }" @click="activeTab = 'layers'">图层</div>
+          <div class="tab-item" :class="{ active: activeTab === 'resources' }" @click="activeTab = 'resources'">资源</div>
+        </div>
+
+        <!-- 内容区域 -->
+        <div class="panel-body" v-show="activeTab === 'layers'">
+          <page-list />
+          <div class="layer-panel-container">
+            <layer-panel />
+          </div>
+        </div>
+
+        <div class="panel-body" v-show="activeTab === 'resources'">
+          <resource-panel />
         </div>
       </div>
 
@@ -45,6 +58,7 @@
 import { ref, provide, onMounted } from 'vue'
 import PageList from './components/page-list.vue'
 import LayerPanel from './components/layer-panel.vue'
+import ResourcePanel from './components/resource-panel.vue'
 import CanvasArea from './components/canvas-area.vue'
 import PropertyPanel from './components/property-panel.vue'
 import ToolbarPanel from './components/toolbar-panel.vue'
@@ -56,6 +70,7 @@ const activeTool = ref('select')
 const canUndo = ref(false)
 const canRedo = ref(false)
 const isCollapsed = ref(false)
+const activeTab = ref('layers') // 'layers' | 'resources'
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
@@ -113,7 +128,48 @@ const handleToolChange = (event) => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-height: 0; /* 关键：允许 flex 子项收缩 */
+  min-height: 0;
+}
+
+.panel-tabs {
+  display: flex;
+  padding: 6px;
+  background-color: #fff;
+  border-bottom: 1px solid #f0f2f5;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #606266;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  background-color: transparent;
+  user-select: none;
+}
+
+.tab-item:hover {
+  color: #303133;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.tab-item.active {
+  color: var(--primary-color);
+  background-color: var(--primary-color-light);
+  font-weight: 600;
+}
+
+.panel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .layer-panel-container {

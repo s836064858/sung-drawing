@@ -1,4 +1,4 @@
-import { Rect, Ellipse, Text, Image, Frame, Line, Polygon, Star, PropertyEvent } from 'leafer-ui'
+import { Rect, Ellipse, Text, Image, Group, Frame, Line, Polygon, Star, PropertyEvent } from 'leafer-ui'
 import { Arrow } from '@leafer-in/arrow'
 import { setupFrameLabel } from '../utils/frame-helper'
 
@@ -11,6 +11,7 @@ const ELEMENT_TYPE_MAP = {
   Ellipse,
   Text,
   Image,
+  Group,
   Frame,
   Line,
   Polygon,
@@ -19,6 +20,77 @@ const ELEMENT_TYPE_MAP = {
 }
 
 export const layerMixin = {
+  /**
+   * 从资源配置创建图层
+   * @param {Object} item 资源项配置
+   * @param {Number} x 插入位置 x (世界坐标)
+   * @param {Number} y 插入位置 y (世界坐标)
+   */
+  addLayerFromResource(item, x, y) {
+    let elementData = item.data
+
+    // 处理 Leafer 导出结构中的顶层 tag
+    if (elementData.tag === 'Leafer' && elementData.children && elementData.children.length > 0) {
+      // 如果是 Leafer 根节点，通常取其第一个子节点作为实际图层
+      elementData = elementData.children[0]
+    }
+
+    const createNode = (data) => {
+      const { tag, children, ...props } = data
+      const ClassName = ELEMENT_TYPE_MAP[tag]
+
+      if (!ClassName) {
+        console.warn(`Unknown tag: ${tag}`)
+        return null
+      }
+
+      // 深拷贝属性
+      const node = new ClassName(JSON.parse(JSON.stringify(props)))
+      
+      // 默认开启交互，除非明确设置为 false
+      if (props.editable !== false) {
+        node.editable = true 
+      }
+
+      if (children && Array.isArray(children)) {
+        children.forEach((childData) => {
+          const childNode = createNode(childData)
+          if (childNode) node.add(childNode)
+        })
+      }
+      return node
+    }
+
+    const element = createNode(elementData)
+
+    if (element) {
+      // 如果没有指定位置，默认放置在画布中心
+      if (x === undefined || y === undefined) {
+        element.x = this.app.tree.width / 2 - (element.width || 0) / 2
+        element.y = this.app.tree.height / 2 - (element.height || 0) / 2
+      } else {
+        // 设置位置（考虑元素中心对齐或左上角对齐，通常拖拽是中心对齐体验更好，或者左上角）
+        // 这里假设 x, y 是目标中心点? 或者左上角?
+        // 通常 Drop 事件给的是鼠标位置。我们将元素中心对齐到鼠标位置。
+        element.x = x - (element.width || 0) / 2
+        element.y = y - (element.height || 0) / 2
+      }
+
+      this.app.tree.add(element)
+      this.app.editor.select(element)
+
+      // 同步图层列表
+      this.syncLayers()
+
+      // 记录历史
+      if (this.recordState) {
+        this.recordState('add-layer')
+      }
+    }
+
+    return element
+  },
+
   /**
    * 同步图层列表到外部
    */

@@ -221,6 +221,20 @@ export const eventMixin = {
   handleDrop(e) {
     e.preventDefault()
 
+    // 1. 尝试处理 JSON 数据（来自资源面板）
+    const jsonData = e.dataTransfer?.getData('application/json')
+    if (jsonData) {
+      try {
+        const item = JSON.parse(jsonData)
+        const point = this.app.tree.getInnerPoint({ x: e.offsetX, y: e.offsetY })
+        this.addLayerFromResource(item, point.x, point.y)
+        return
+      } catch (err) {
+        console.error('Failed to parse dropped JSON', err)
+      }
+    }
+
+    // 2. 处理文件（图片等）
     const items = e.dataTransfer?.items
     if (!items) return
 
