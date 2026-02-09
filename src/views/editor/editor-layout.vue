@@ -8,8 +8,11 @@
         <span class="app-title">Sung Drawing</span>
       </div>
 
-      <div class="layer-panel-container">
-        <layer-panel />
+      <div class="left-panel-content">
+        <page-list />
+        <div class="layer-panel-container">
+          <layer-panel />
+        </div>
       </div>
 
       <div class="copyright-info">
@@ -40,6 +43,7 @@
 
 <script setup>
 import { ref, provide, onMounted } from 'vue'
+import PageList from './components/page-list.vue'
 import LayerPanel from './components/layer-panel.vue'
 import CanvasArea from './components/canvas-area.vue'
 import PropertyPanel from './components/property-panel.vue'
@@ -103,6 +107,22 @@ const handleToolChange = (event) => {
 </script>
 
 <style scoped>
+/* 左侧面板布局优化 */
+.left-panel-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0; /* 关键：允许 flex 子项收缩 */
+}
+
+.layer-panel-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .editor-layout {
   height: 100vh;
   width: 100vw;

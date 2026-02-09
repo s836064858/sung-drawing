@@ -43,6 +43,39 @@ export class CanvasCore {
   }
 
   /**
+   * 导出当前画布内容为 JSON
+   */
+  exportJson() {
+    return this.app.tree.toJSON()
+  }
+
+  /**
+   * 导入 JSON 数据到画布
+   */
+  importJson(json) {
+    if (!json) {
+      this.app.tree.clear()
+      return
+    }
+    
+    // 如果是 JSON 字符串，先解析
+    const data = typeof json === 'string' ? JSON.parse(json) : json
+    
+    // 清空当前画布
+    this.app.tree.clear()
+    
+    // 添加新内容
+    // Leafer 的 add 方法支持直接添加 JSON 对象结构
+    if (data.children) {
+        data.children.forEach(child => {
+             this.app.tree.add(child)
+        })
+    } else {
+         this.app.tree.add(data)
+    }
+  }
+
+  /**
    * 切换标尺显示状态
    */
   toggleRuler(enabled) {
