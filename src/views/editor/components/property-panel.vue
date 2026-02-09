@@ -54,22 +54,16 @@
           <div class="property-input-wrapper">
             <!-- Flip icons as buttons for now -->
             <div class="flip-actions">
-              <div
-                class="icon-btn"
-                :class="{ active: formData.scaleX < 0, disabled: formData.locked }"
-                title="水平翻转"
-                @click="!formData.locked && toggleFlip('horizontal')"
-              >
-                <i class="ri-refund-line" style="transform: rotate(90deg)"></i>
-              </div>
-              <div
-                class="icon-btn"
-                :class="{ active: formData.scaleY < 0, disabled: formData.locked }"
-                title="垂直翻转"
-                @click="!formData.locked && toggleFlip('vertical')"
-              >
-                <i class="ri-refund-line"></i>
-              </div>
+              <el-tooltip content="水平翻转" placement="top" :show-after="500">
+                <div class="icon-btn" :class="{ active: formData.scaleX < 0, disabled: formData.locked }" @click="!formData.locked && toggleFlip('horizontal')">
+                  <i class="ri-refund-line" style="transform: rotate(90deg)"></i>
+                </div>
+              </el-tooltip>
+              <el-tooltip content="垂直翻转" placement="top" :show-after="500">
+                <div class="icon-btn" :class="{ active: formData.scaleY < 0, disabled: formData.locked }" @click="!formData.locked && toggleFlip('vertical')">
+                  <i class="ri-refund-line"></i>
+                </div>
+              </el-tooltip>
             </div>
           </div>
         </div>
