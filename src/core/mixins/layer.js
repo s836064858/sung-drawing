@@ -1,24 +1,16 @@
-import { Rect, Ellipse, Text, Image, Group, Frame, Box, Line, Polygon, Star, PropertyEvent } from 'leafer-ui'
-import { Arrow } from '@leafer-in/arrow'
-import { setupFrameLabel } from '../utils/frame-helper'
+import { Rect } from 'leafer-ui'
+import { isContainerTag } from '../constants/element-types'
+import {
+  serializeElement,
+  deserializeElement,
+  getElementTypeMap
+} from '../utils/element-serializer'
 
 // 复制粘贴配置
-const PASTE_OFFSET_STEP = 20 // 每次粘贴的偏移增量（px）
+const PASTE_OFFSET_STEP = 20
 
-// 支持的元素类型映射
-const ELEMENT_TYPE_MAP = {
-  Rect,
-  Ellipse,
-  Text,
-  Image,
-  Group,
-  Frame,
-  Box,
-  Line,
-  Polygon,
-  Star,
-  Arrow
-}
+// 获取元素类型映射（用于 addLayerFromResource）
+const ELEMENT_TYPE_MAP = getElementTypeMap()
 
 export const layerMixin = {
   /**
@@ -118,8 +110,7 @@ export const layerMixin = {
     }
 
     // 如果是容器类型（Frame/Box/Group），递归处理子图层
-    const containerTags = new Set(['Frame', 'Box', 'Group'])
-    if (containerTags.has(child.tag) && child.children && child.children.length > 0) {
+    if (isContainerTag(child.tag) && child.children && child.children.length > 0) {
       layerData.children = child.children
         .filter((subChild) => !subChild.isInternal && !(subChild.data && subChild.data.isFrameLabel))
         .map((subChild) => this.formatLayerData(subChild))
@@ -313,7 +304,7 @@ export const layerMixin = {
 
     if (position === 'inside') {
       // 拖入容器内部
-      if (targetLayer.tag === 'Frame' || targetLayer.tag === 'Group' || targetLayer.tag === 'Box') {
+      if (isContainerTag(targetLayer.tag)) {
         // 添加到容器末尾（最上层）
         targetLayer.add(dragLayer)
       } else {
@@ -414,7 +405,7 @@ export const layerMixin = {
     try {
       // 序列化选中的元素，并记录父级关系
       this.clipboard = selected.map((item) => {
-        const data = this.serializeElement(item)
+        const data = serializeElement(item)
 
         // 记录父级信息
         if (item.parent && item.parent.tag === 'Frame') {
@@ -512,7 +503,7 @@ export const layerMixin = {
     if (!element) return
 
     try {
-      const data = this.serializeElement(element)
+      const data = serializeElement(element)
       const newElement = this.createElementFromData(data, PASTE_OFFSET_STEP)
 
       if (newElement) {
@@ -536,7 +527,7 @@ export const layerMixin = {
    * @returns {Object} { element, originalId }
    */
   createElementFromData(data, offset = 0) {
-    const element = this.deserializeElement(data)
+    const element = deserializeElement(data)
     if (element) {
       element.x = (element.x || 0) + offset
       element.y = (element.y || 0) + offset
@@ -564,100 +555,4 @@ export const layerMixin = {
       console.warn('无法清除系统剪贴板:', err)
     }
   },
-
-  /**
-   * 序列化元素数据（用于复制）
-   */
-  serializeElement(element) {
-    try {
-      const jsonData = element.toJSON()
-
-      const data = {
-        tag: element.tag,
-        innerId: element.innerId, // 保留原始 ID 用于建立映射关系
-        ...jsonData
-      }
-
-      // 处理子元素
-      data.children = this.serializeChildren(element)
-
-      return data
-    } catch (error) {
-      console.error('序列化元素失败:', error)
-      return null
-    }
-  },
-
-  /**
-   * 序列化子元素列表
-   */
-  serializeChildren(element) {
-    if (!element.children) return []
-
-    try {
-      // 将 children 转换为数组（可能是 LeaferList 对象）
-      const childrenArray = Array.isArray(element.children) ? element.children : Array.from(element.children)
-
-      return childrenArray
-        .filter((child) => !child.isInternal) // 过滤内部元素
-        .map((child) => this.serializeElement(child))
-        .filter(Boolean) // 过滤序列化失败的元素
-    } catch (error) {
-      console.error('序列化子元素失败:', error)
-      return []
-    }
-  },
-
-  /**
-   * 反序列化元素数据（用于粘贴）
-   */
-  deserializeElement(data) {
-    if (!data || !data.tag) return null
-
-    try {
-      const ElementClass = ELEMENT_TYPE_MAP[data.tag]
-      if (!ElementClass) {
-        console.warn(`不支持的元素类型: ${data.tag}`)
-        return null
-      }
-
-      // 创建新元素（移除 innerId、children 和内部标记）
-      const { innerId, children, _parentFrameId, _isInFrame, ...elementData } = data
-      const element = new ElementClass(elementData)
-
-      // 特殊处理 Frame
-      if (data.tag === 'Frame') {
-        setupFrameLabel(element)
-      }
-
-      // 递归创建子元素
-      if (children && Array.isArray(children) && children.length > 0) {
-        this.deserializeChildren(element, children)
-      }
-
-      return element
-    } catch (error) {
-      console.error('反序列化元素失败:', error)
-      return null
-    }
-  },
-
-  /**
-   * 反序列化子元素列表
-   */
-  deserializeChildren(parent, children) {
-    try {
-      children.forEach((childData) => {
-        // 跳过内部元素
-        if (childData.isInternal) return
-
-        const childElement = this.deserializeElement(childData)
-        if (childElement) {
-          parent.add(childElement)
-        }
-      })
-    } catch (error) {
-      console.error('反序列化子元素失败:', error)
-    }
-  }
 }

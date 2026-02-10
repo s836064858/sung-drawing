@@ -377,7 +377,7 @@
             <el-popover
               v-model:visible="showStrokePopover"
               placement="left-start"
-              :width="320"
+              :width="370"
               trigger="click"
               :popper-options="{
                 modifiers: [

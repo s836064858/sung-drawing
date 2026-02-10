@@ -12,18 +12,15 @@ export const resourceCategories = [
         name: '主按钮',
         icon: 'ri-toggle-fill',
         data: {
-          tag: 'Box',
+          tag: 'Frame',
           name: 'Button/Primary',
+          width: 120,
+          height: 40,
+          fill: '#409eff',
+          cornerRadius: 6,
+          overflow: 'show',
+          shadow: { x: 0, y: 2, blur: 4, color: 'rgba(64, 158, 255, 0.2)' },
           children: [
-            {
-              tag: 'Rect',
-              width: 120,
-              height: 40,
-              cornerRadius: 6,
-              fill: '#409eff',
-              shadow: { x: 0, y: 2, blur: 4, color: 'rgba(64, 158, 255, 0.2)' },
-              cursor: 'pointer'
-            },
             {
               tag: 'Text',
               text: '确 定',
@@ -50,6 +47,7 @@ export const resourceCategories = [
           height: 160,
           fill: '#fff',
           cornerRadius: 8,
+          overflow: 'show',
           stroke: '#ebeef5',
           strokeWidth: 1,
           shadow: { x: 0, y: 4, blur: 12, color: 'rgba(0, 0, 0, 0.05)' },
@@ -86,20 +84,18 @@ export const resourceCategories = [
               width: 248
             },
             {
-              tag: 'Box',
+              tag: 'Frame',
               name: 'Action',
               x: 200,
               y: 120,
+              width: 64,
+              height: 28,
+              fill: '#ecf5ff',
+              cornerRadius: 4,
+              stroke: '#d9ecff',
+              overflow: 'show',
               cursor: 'pointer',
               children: [
-                {
-                  tag: 'Rect',
-                  width: 64,
-                  height: 28,
-                  cornerRadius: 4,
-                  fill: '#ecf5ff',
-                  stroke: '#d9ecff'
-                },
                 {
                   tag: 'Text',
                   text: '操作',
@@ -120,19 +116,16 @@ export const resourceCategories = [
         name: '输入框',
         icon: 'ri-input-cursor-move',
         data: {
-          tag: 'Box',
+          tag: 'Frame',
           name: 'Input/Default',
+          width: 240,
+          height: 36,
+          fill: '#fff',
+          cornerRadius: 4,
+          stroke: '#dcdfe6',
+          strokeWidth: 1,
+          overflow: 'show',
           children: [
-            {
-              tag: 'Rect',
-              width: 240,
-              height: 36,
-              cornerRadius: 4,
-              fill: '#fff',
-              stroke: '#dcdfe6',
-              strokeWidth: 1,
-              cursor: 'text'
-            },
             {
               tag: 'Text',
               text: '请输入内容',
@@ -226,16 +219,14 @@ export const resourceCategories = [
         name: '图表占位',
         icon: 'ri-bar-chart-line',
         data: {
-          tag: 'Box',
+          tag: 'Frame',
           name: 'Chart/Bar',
+          width: 300,
+          height: 200,
+          fill: '#f5f7fa',
+          cornerRadius: 4,
+          overflow: 'show',
           children: [
-            {
-              tag: 'Rect',
-              width: 300,
-              height: 200,
-              fill: '#f5f7fa',
-              cornerRadius: 4
-            },
             {
               tag: 'Line',
               points: [40, 20, 40, 160, 280, 160],

@@ -1,5 +1,6 @@
 import { ChildEvent, PropertyEvent, PointerEvent, Polygon, DragEvent, RotateEvent, ResizeEvent } from 'leafer-ui'
 import { EditorEvent } from '@leafer-in/editor'
+import { isContainerTag } from '../constants/element-types'
 
 export const eventMixin = {
   initEvents() {
@@ -82,8 +83,8 @@ export const eventMixin = {
     const x = element.x || 0
     const y = element.y || 0
 
-    // 如果元素在 Frame 内，需要加上 Frame 的坐标
-    if (element.parent && element.parent.tag === 'Frame') {
+    // 如果元素在容器内，需要加上容器的坐标
+    if (element.parent && isContainerTag(element.parent.tag)) {
       return {
         x: x + (element.parent.x || 0),
         y: y + (element.parent.y || 0)
@@ -137,13 +138,17 @@ export const eventMixin = {
   },
 
   /**
-   * 查找包含指定点的 Frame
+   * 查找包含指定点的容器（Frame/Box）
+   * 排除被拖拽元素自身及其后代，防止循环嵌套
    */
   findFrameAtPoint(x, y, excludeElement = null) {
-    const frames = this.app.tree.children.filter((child) => child.tag === 'Frame')
+    const containers = this.app.tree.children.filter((child) => isContainerTag(child.tag))
 
-    for (const frame of frames) {
+    for (const frame of containers) {
       if (frame === excludeElement) continue
+
+      // 防止将容器拖入自己的后代
+      if (excludeElement && this._isDescendantOf(frame, excludeElement)) continue
 
       const frameX = frame.x || 0
       const frameY = frame.y || 0
@@ -158,6 +163,18 @@ export const eventMixin = {
     }
 
     return null
+  },
+
+  /**
+   * 判断 target 是否是 ancestor 的后代
+   */
+  _isDescendantOf(target, ancestor) {
+    let node = target
+    while (node) {
+      if (node === ancestor) return true
+      node = node.parent
+    }
+    return false
   },
 
   /**
@@ -460,7 +477,7 @@ export const eventMixin = {
     }
 
     const draggedElement = selectedElements[0]
-    if (!draggedElement || draggedElement.tag === 'Frame' || !this.app.editor.dragging) {
+    if (!draggedElement || !this.app.editor.dragging) {
       this.clearFrameHighlight()
       return
     }
@@ -525,7 +542,7 @@ export const eventMixin = {
 
       const draggedElement = selectedElements[0]
 
-      if (!draggedElement || draggedElement.tag === 'Frame') return
+      if (!draggedElement) return
 
       const { width, height } = this.getElementSize(draggedElement)
       if (width === 0 || height === 0) return
@@ -537,7 +554,7 @@ export const eventMixin = {
       const foundFrame = this.findFrameAtPoint(centerX, centerY, draggedElement)
 
       const currentParent = draggedElement.parent
-      const isInFrame = currentParent && currentParent.tag === 'Frame'
+      const isInFrame = currentParent && isContainerTag(currentParent.tag)
 
       if (foundFrame) {
         // 元素应该在 Frame 内

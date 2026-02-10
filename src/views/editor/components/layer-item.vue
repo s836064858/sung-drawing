@@ -100,6 +100,7 @@
 
 <script setup>
 import { computed, ref, watch, nextTick } from 'vue'
+import { getTypeIcon } from '@/core/constants/element-types'
 
 const props = defineProps({
   layer: {
@@ -198,33 +199,6 @@ const cancelRename = () => {
 
 const toggleExpand = () => {
   isExpanded.value = !isExpanded.value
-}
-
-const getTypeIcon = (type) => {
-  switch (type) {
-    case 'Rect':
-      return 'ri-rectangle-line'
-    case 'Ellipse':
-      return 'ri-circle-line'
-    case 'Polygon':
-      return 'ri-vip-diamond-line'
-    case 'Text':
-      return 'ri-text'
-    case 'Frame':
-      return 'ri-layout-line'
-    case 'Group':
-      return 'ri-group-line'
-    case 'Box':
-      return 'ri-checkbox-blank-line'
-    case 'Image':
-      return 'ri-image-line'
-    case 'Line':
-      return 'ri-subtract-line'
-    case 'Arrow':
-      return 'ri-arrow-right-line'
-    default:
-      return 'ri-file-line'
-  }
 }
 </script>
 

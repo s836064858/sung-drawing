@@ -76,6 +76,7 @@ import { computed, inject, ref, onMounted, onUnmounted } from 'vue'
 import { useStore } from 'vuex'
 import LayerItem from './layer-item.vue'
 import { ElMessageBox } from 'element-plus'
+import { isContainerTag } from '@/core/constants/element-types'
 
 const store = useStore()
 
@@ -205,8 +206,8 @@ const onDragOver = (e, layer) => {
   const offsetY = e.clientY - rect.top
   const height = rect.height
 
-  // 检查是否是 Frame，如果是，则允许拖入
-  const isContainer = layer.type === 'Frame' || layer.type === 'Group'
+  // 检查是否是容器类型
+  const isContainer = isContainerTag(layer.type)
 
   if (isContainer) {
     // 容器判定区域：中间 50%
