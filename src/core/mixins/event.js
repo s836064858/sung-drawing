@@ -2,6 +2,9 @@ import { ChildEvent, PropertyEvent, PointerEvent, Polygon, DragEvent, RotateEven
 import { EditorEvent } from '@leafer-in/editor'
 import { isContainerTag } from '../constants/element-types'
 
+// 用 WeakMap 存储 Frame 原始样式，避免污染元素属性
+const frameOriginalStyles = new WeakMap()
+
 export const eventMixin = {
   initEvents() {
     const { tree, editor } = this.app
@@ -23,6 +26,22 @@ export const eventMixin = {
     }
 
     this.initLeaferEvents(tree, editor)
+  },
+
+  /**
+   * 销毁事件监听，防止内存泄漏
+   */
+  destroyEvents() {
+    const { keydown, paste, dragover, drop } = this.eventHandlers
+    if (keydown) window.removeEventListener('keydown', keydown)
+    if (paste) window.removeEventListener('paste', paste)
+
+    if (this.app?.view) {
+      if (dragover) this.app.view.removeEventListener('dragover', dragover)
+      if (drop) this.app.view.removeEventListener('drop', drop)
+    }
+
+    this.eventHandlers = {}
   },
 
   initLeaferEvents(tree, editor) {
@@ -49,12 +68,16 @@ export const eventMixin = {
       this.recordState('transform')
     })
 
+    // 拖拽结束时检查 Frame 交叉（替代 PointerEvent.UP + setTimeout）
+    editor.on(DragEvent.END, () => {
+      this.checkFrameIntersection()
+    })
+
     // 画布交互事件
     this.app.on(PointerEvent.TAP, this.handleTap.bind(this))
     this.app.on(PointerEvent.DOWN, this.handlePointerDown.bind(this))
     this.app.on(PointerEvent.MOVE, this.handlePointerMove.bind(this))
     this.app.on(PointerEvent.UP, this.handlePointerUp.bind(this))
-    this.app.on(PointerEvent.UP, this.checkFrameIntersection.bind(this))
     this.app.on(PointerEvent.MOVE, this.updateFrameHighlight.bind(this))
 
     // 监听画布元素悬浮事件，高亮对应图层
@@ -67,6 +90,21 @@ export const eventMixin = {
    */
   isEditableElement(target) {
     return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+  },
+
+  /**
+   * 获取当前画布缩放比例
+   */
+  getScale() {
+    return this.app.tree.scaleX || 1
+  },
+
+  /**
+   * 获取缩放感知的距离阈值
+   * @param {number} basePx 基准像素值（在 1x 缩放下的值）
+   */
+  getScaledThreshold(basePx) {
+    return basePx / this.getScale()
   },
 
   /**
@@ -83,7 +121,6 @@ export const eventMixin = {
     const x = element.x || 0
     const y = element.y || 0
 
-    // 如果元素在容器内，需要加上容器的坐标
     if (element.parent && isContainerTag(element.parent.tag)) {
       return {
         x: x + (element.parent.x || 0),
@@ -139,30 +176,50 @@ export const eventMixin = {
 
   /**
    * 查找包含指定点的容器（Frame/Box）
+   * 递归查找并按层级优先返回最内层的容器
    * 排除被拖拽元素自身及其后代，防止循环嵌套
    */
   findFrameAtPoint(x, y, excludeElement = null) {
-    const containers = this.app.tree.children.filter((child) => isContainerTag(child.tag))
+    const findInChildren = (children) => {
+      // 倒序遍历，优先匹配 zIndex 更高（后添加）的容器
+      for (let i = children.length - 1; i >= 0; i--) {
+        const child = children[i]
+        if (!isContainerTag(child.tag)) continue
+        if (child === excludeElement) continue
+        if (excludeElement && this._isDescendantOf(child, excludeElement)) continue
 
-    for (const frame of containers) {
-      if (frame === excludeElement) continue
+        const frameX = child.x || 0
+        const frameY = child.y || 0
+        const frameWidth = child.width || 0
+        const frameHeight = child.height || 0
 
-      // 防止将容器拖入自己的后代
-      if (excludeElement && this._isDescendantOf(frame, excludeElement)) continue
+        if (frameWidth === 0 || frameHeight === 0) continue
 
-      const frameX = frame.x || 0
-      const frameY = frame.y || 0
-      const frameWidth = frame.width || 0
-      const frameHeight = frame.height || 0
-
-      if (frameWidth === 0 || frameHeight === 0) continue
-
-      if (this.isPointInRect(x, y, frameX, frameY, frameWidth, frameHeight)) {
-        return frame
+        if (this.isPointInRect(x, y, frameX, frameY, frameWidth, frameHeight)) {
+          // 递归查找内层容器
+          if (child.children && child.children.length > 0) {
+            // 将坐标转换为子容器的本地坐标
+            const localX = x - frameX
+            const localY = y - frameY
+            const innerFrame = findInChildren(child.children)
+            if (innerFrame) {
+              // 内层容器的坐标需要用本地坐标重新检查
+              const innerX = innerFrame.x || 0
+              const innerY = innerFrame.y || 0
+              const innerW = innerFrame.width || 0
+              const innerH = innerFrame.height || 0
+              if (this.isPointInRect(localX, localY, innerX, innerY, innerW, innerH)) {
+                return innerFrame
+              }
+            }
+          }
+          return child
+        }
       }
+      return null
     }
 
-    return null
+    return findInChildren(this.app.tree.children)
   },
 
   /**
@@ -178,6 +235,13 @@ export const eventMixin = {
   },
 
   /**
+   * 检查剪贴板是否有图层数据
+   */
+  hasClipboardLayers() {
+    return this.clipboard && this.clipboard.length > 0
+  },
+
+  /**
    * 处理粘贴事件（支持粘贴图片和图层）
    * 优先级：图片 > 图层
    */
@@ -186,9 +250,8 @@ export const eventMixin = {
 
     const items = e.clipboardData?.items
 
-    // 如果没有剪贴板项，尝试粘贴图层
     if (!items) {
-      if (this.clipboard && this.clipboard.length > 0) {
+      if (this.hasClipboardLayers()) {
         this.pasteLayer()
         e.preventDefault()
       }
@@ -196,15 +259,12 @@ export const eventMixin = {
     }
 
     // 优先检查是否有图片
-    const hasImage = this.tryPasteImage(items)
-
-    if (hasImage) {
+    if (this.tryPasteImage(items)) {
       e.preventDefault()
       return
     }
 
-    // 如果没有图片，尝试粘贴图层
-    if (this.clipboard && this.clipboard.length > 0) {
+    if (this.hasClipboardLayers()) {
       this.pasteLayer()
       e.preventDefault()
     }
@@ -273,7 +333,6 @@ export const eventMixin = {
   handleTap(e) {
     if (this.mode !== 'text') return
 
-    // 恢复交互能力
     this.app.tree.hitChildren = true
 
     const { x, y } = this.app.tree.getInnerPoint(e)
@@ -308,12 +367,12 @@ export const eventMixin = {
     // 钢笔的绘制（自由绘制）
     if (this.mode === 'pen') {
       const points = this.currentDrawingShape.points
-      // 简单平滑处理：如果新点距离上一个点太近（< 2px），则忽略
       if (points.length >= 2) {
         const lastX = points[points.length - 2]
         const lastY = points[points.length - 1]
         const dist = Math.sqrt((currentX - lastX) ** 2 + (currentY - lastY) ** 2)
-        if (dist < 2) return
+        // 缩放感知：基准 2px 在当前缩放下的等效距离
+        if (dist < this.getScaledThreshold(2)) return
       }
 
       this.currentDrawingShape.set({
@@ -336,7 +395,6 @@ export const eventMixin = {
     const y = Math.min(currentY, startY)
 
     if (this.mode === 'diamond') {
-      // 菱形的四个顶点
       this.currentDrawingShape.set({
         x,
         y,
@@ -356,112 +414,138 @@ export const eventMixin = {
     if (!this.isDrawing) return
 
     this.isDrawing = false
-    // 恢复交互能力，防止 editor.select 出错
     this.app.tree.hitChildren = true
-
-    const minSize = 5
-
-    // 重置粘贴偏移计数器
     this.resetPasteOffset()
 
     if (this.currentDrawingShape) {
-      // 钢笔的验证
-      if (this.mode === 'pen') {
-        const points = this.currentDrawingShape.points
-        if (points.length < 6) {
-          // 至少3个点才算有效线条
-          this.currentDrawingShape.remove()
-        } else {
-          const startX = points[0]
-          const startY = points[1]
-          const endX = points[points.length - 2]
-          const endY = points[points.length - 1]
-
-          const dx = endX - startX
-          const dy = endY - startY
-          const dist = Math.sqrt(dx * dx + dy * dy)
-
-          // 如果起点和终点距离小于 20，则闭合为自定义图形
-          if (dist < 20) {
-            // 闭合优化：从尾部开始修剪掉所有距离起点 < 20 的点
-            // 这样可以去除为了闭合而画的多余笔迹，使闭合更自然
-            let prunedPoints = [...points]
-
-            // 至少保留前3个点（6个坐标）
-            while (prunedPoints.length > 6) {
-              const lastX = prunedPoints[prunedPoints.length - 2]
-              const lastY = prunedPoints[prunedPoints.length - 1]
-              const d = Math.sqrt((lastX - startX) ** 2 + (lastY - startY) ** 2)
-
-              if (d < 20) {
-                prunedPoints.pop()
-                prunedPoints.pop()
-              } else {
-                break
-              }
-            }
-
-            const polygon = new Polygon({
-              points: prunedPoints,
-              fill: '#32cd79',
-              editable: true,
-              draggable: true,
-              name: '自定义图形'
-            })
-            if (polygon.innerId) {
-              polygon.name = `自定义图形 ${polygon.innerId}`
-            }
-            this.currentDrawingShape.remove()
-            this.app.tree.add(polygon)
-            this.app.editor.select(polygon)
-            this.recordState('create-polygon')
-          } else {
-            this.app.editor.select(this.currentDrawingShape)
-            this.recordState('create-pen')
-          }
-        }
-      } else if (this.mode === 'line') {
-        // 直线的验证
-        const points = this.currentDrawingShape.points
-        const dx = points[2] - points[0]
-        const dy = points[3] - points[1]
-        const length = Math.sqrt(dx * dx + dy * dy)
-
-        if (length < minSize) {
-          this.currentDrawingShape.remove()
-        } else {
-          this.app.editor.select(this.currentDrawingShape)
-          this.recordState('create-line')
-        }
-      } else if (this.mode === 'arrow') {
-        // 箭头的验证
-        const toPoint = this.currentDrawingShape.toPoint
-        const dx = toPoint.x - this.currentDrawingShape.x
-        const dy = toPoint.y - this.currentDrawingShape.y
-        const length = Math.sqrt(dx * dx + dy * dy)
-
-        if (length < minSize) {
-          this.currentDrawingShape.remove()
-        } else {
-          this.app.editor.select(this.currentDrawingShape)
-          this.recordState('create-arrow')
-        }
-      } else {
-        const { width, height } = this.currentDrawingShape
-
-        if (width < minSize || height < minSize) {
-          this.currentDrawingShape.remove()
-        } else {
-          this.app.editor.select(this.currentDrawingShape)
-          this.recordState('create-shape')
-        }
-      }
+      this._finalizeDrawing()
     }
 
     this.currentDrawingShape = null
     this.startPoint = null
     this.setMode('select')
     this.clearFrameHighlight()
+  },
+
+  /**
+   * 完成绘制：根据模式分发到对应的验证逻辑
+   */
+  _finalizeDrawing() {
+    const shape = this.currentDrawingShape
+    const minSize = this.getScaledThreshold(5)
+
+    if (this.mode === 'pen') {
+      this._finalizePenDrawing(shape)
+    } else if (this.mode === 'line') {
+      this._finalizeLineDrawing(shape, minSize)
+    } else if (this.mode === 'arrow') {
+      this._finalizeArrowDrawing(shape, minSize)
+    } else {
+      this._finalizeShapeDrawing(shape, minSize)
+    }
+  },
+
+  /**
+   * 完成钢笔绘制
+   */
+  _finalizePenDrawing(shape) {
+    const points = shape.points
+    if (points.length < 6) {
+      // 至少 3 个点才算有效线条
+      shape.remove()
+      return
+    }
+
+    const startX = points[0]
+    const startY = points[1]
+    const endX = points[points.length - 2]
+    const endY = points[points.length - 1]
+    const dist = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2)
+
+    // 缩放感知的闭合阈值
+    const closeThreshold = this.getScaledThreshold(20)
+
+    if (dist < closeThreshold) {
+      // 闭合为自定义图形：修剪尾部距离起点过近的点
+      let prunedPoints = [...points]
+      while (prunedPoints.length > 6) {
+        const lastX = prunedPoints[prunedPoints.length - 2]
+        const lastY = prunedPoints[prunedPoints.length - 1]
+        const d = Math.sqrt((lastX - startX) ** 2 + (lastY - startY) ** 2)
+        if (d < closeThreshold) {
+          prunedPoints.pop()
+          prunedPoints.pop()
+        } else {
+          break
+        }
+      }
+
+      const polygon = new Polygon({
+        points: prunedPoints,
+        fill: '#32cd79',
+        editable: true,
+        draggable: true,
+        name: '自定义图形'
+      })
+      if (polygon.innerId) {
+        polygon.name = `自定义图形 ${polygon.innerId}`
+      }
+      shape.remove()
+      this.app.tree.add(polygon)
+      this.app.editor.select(polygon)
+      this.recordState('create-polygon')
+    } else {
+      this.app.editor.select(shape)
+      this.recordState('create-pen')
+    }
+  },
+
+  /**
+   * 完成直线绘制
+   */
+  _finalizeLineDrawing(shape, minSize) {
+    const points = shape.points
+    const dx = points[2] - points[0]
+    const dy = points[3] - points[1]
+    const length = Math.sqrt(dx * dx + dy * dy)
+
+    if (length < minSize) {
+      shape.remove()
+    } else {
+      this.app.editor.select(shape)
+      this.recordState('create-line')
+    }
+  },
+
+  /**
+   * 完成箭头绘制
+   */
+  _finalizeArrowDrawing(shape, minSize) {
+    const toPoint = shape.toPoint
+    const dx = toPoint.x - shape.x
+    const dy = toPoint.y - shape.y
+    const length = Math.sqrt(dx * dx + dy * dy)
+
+    if (length < minSize) {
+      shape.remove()
+    } else {
+      this.app.editor.select(shape)
+      this.recordState('create-arrow')
+    }
+  },
+
+  /**
+   * 完成矩形/圆形/菱形/Frame 绘制
+   */
+  _finalizeShapeDrawing(shape, minSize) {
+    const { width, height } = shape
+
+    if (width < minSize || height < minSize) {
+      shape.remove()
+    } else {
+      this.app.editor.select(shape)
+      this.recordState('create-shape')
+    }
   },
 
   /**
@@ -491,7 +575,6 @@ export const eventMixin = {
     const { x: centerX, y: centerY } = this.getElementWorldCenter(draggedElement)
     const targetFrame = this.findFrameAtPoint(centerX, centerY, draggedElement)
 
-    // 更新高亮状态
     if (targetFrame !== this.highlightedFrame) {
       this.clearFrameHighlight()
       if (targetFrame) {
@@ -501,14 +584,16 @@ export const eventMixin = {
   },
 
   /**
-   * 高亮 Frame（显示蓝色边框）
+   * 高亮 Frame（显示蓝色边框），用 WeakMap 存储原始样式
    */
   highlightFrame(frame) {
     this.highlightedFrame = frame
 
-    if (!frame.__originalStroke) {
-      frame.__originalStroke = frame.stroke
-      frame.__originalStrokeWidth = frame.strokeWidth
+    if (!frameOriginalStyles.has(frame)) {
+      frameOriginalStyles.set(frame, {
+        stroke: frame.stroke,
+        strokeWidth: frame.strokeWidth
+      })
     }
 
     frame.stroke = '#409EFF'
@@ -516,79 +601,69 @@ export const eventMixin = {
   },
 
   /**
-   * 清除 Frame 高亮
+   * 清除 Frame 高亮，从 WeakMap 恢复原始样式
    */
   clearFrameHighlight() {
     if (this.highlightedFrame) {
-      if (this.highlightedFrame.__originalStroke !== undefined) {
-        this.highlightedFrame.stroke = this.highlightedFrame.__originalStroke
-        this.highlightedFrame.strokeWidth = this.highlightedFrame.__originalStrokeWidth
-        delete this.highlightedFrame.__originalStroke
-        delete this.highlightedFrame.__originalStrokeWidth
+      const original = frameOriginalStyles.get(this.highlightedFrame)
+      if (original) {
+        this.highlightedFrame.stroke = original.stroke
+        this.highlightedFrame.strokeWidth = original.strokeWidth
+        frameOriginalStyles.delete(this.highlightedFrame)
       }
-
       this.highlightedFrame = null
     }
   },
 
   /**
    * 检查元素是否应该移入/移出 Frame
+   * 由 DragEvent.END 触发，不再依赖 setTimeout
    */
   checkFrameIntersection() {
-    setTimeout(() => {
-      const selectedElements = this.app.editor.list
+    const selectedElements = this.app.editor.list
 
-      if (!selectedElements || selectedElements.length !== 1) return
+    if (!selectedElements || selectedElements.length !== 1) return
 
-      const draggedElement = selectedElements[0]
+    const draggedElement = selectedElements[0]
+    if (!draggedElement) return
 
-      if (!draggedElement) return
+    const { width, height } = this.getElementSize(draggedElement)
+    if (width === 0 || height === 0) return
 
-      const { width, height } = this.getElementSize(draggedElement)
-      if (width === 0 || height === 0) return
+    const { x: worldX, y: worldY } = this.getElementWorldPosition(draggedElement)
+    const { x: centerX, y: centerY } = this.getElementWorldCenter(draggedElement)
 
-      const { x: worldX, y: worldY } = this.getElementWorldPosition(draggedElement)
-      const { x: centerX, y: centerY } = this.getElementWorldCenter(draggedElement)
+    const foundFrame = this.findFrameAtPoint(centerX, centerY, draggedElement)
 
-      // 查找目标 Frame
-      const foundFrame = this.findFrameAtPoint(centerX, centerY, draggedElement)
+    const currentParent = draggedElement.parent
+    const isInFrame = currentParent && isContainerTag(currentParent.tag)
 
-      const currentParent = draggedElement.parent
-      const isInFrame = currentParent && isContainerTag(currentParent.tag)
+    if (foundFrame) {
+      if (isInFrame && currentParent === foundFrame) return
 
-      if (foundFrame) {
-        // 元素应该在 Frame 内
-        if (isInFrame && currentParent === foundFrame) return
+      draggedElement.remove()
 
-        draggedElement.remove()
+      const { x: frameWorldX, y: frameWorldY } = this.getElementWorldPosition(foundFrame)
+      draggedElement.x = worldX - frameWorldX
+      draggedElement.y = worldY - frameWorldY
 
-        // 计算相对于 Frame 的本地坐标
-        const { x: frameWorldX, y: frameWorldY } = this.getElementWorldPosition(foundFrame)
-        const localX = worldX - frameWorldX
-        const localY = worldY - frameWorldY
+      foundFrame.add(draggedElement)
+      this.app.editor.select(draggedElement)
+      this.syncLayers()
+      this.recordState('move-into-frame')
+    } else if (isInFrame) {
+      draggedElement.remove()
 
-        draggedElement.x = localX
-        draggedElement.y = localY
+      draggedElement.x = worldX
+      draggedElement.y = worldY
 
-        foundFrame.add(draggedElement)
-        this.app.editor.select(draggedElement)
-        this.syncLayers()
-        this.recordState('move-into-frame')
-      } else if (isInFrame) {
-        // 元素应该移出 Frame
-        draggedElement.remove()
+      this.app.tree.add(draggedElement)
+      this.app.editor.select(draggedElement)
+      this.syncLayers()
+      this.recordState('move-out-of-frame')
+    }
 
-        draggedElement.x = worldX
-        draggedElement.y = worldY
-
-        this.app.tree.add(draggedElement)
-        this.app.editor.select(draggedElement)
-        this.syncLayers()
-        this.recordState('move-out-of-frame')
-      }
-
-      this.clearFrameHighlight()
-    }, 100)
+    this.clearFrameHighlight()
   },
 
   /**
@@ -596,14 +671,9 @@ export const eventMixin = {
    */
   handleElementHoverStart(e) {
     const element = e.target
-
-    // 忽略内部元素和画布本身
     if (!element || element.isInternal || element === this.app.tree) return
-
-    // 如果正在绘制或拖拽，不触发高亮
     if (this.isDrawing || this.app.editor.dragging) return
 
-    // 通知外部高亮图层
     if (this.callbacks.onLayerHover && element.innerId) {
       this.callbacks.onLayerHover(element.innerId)
     }
@@ -614,11 +684,8 @@ export const eventMixin = {
    */
   handleElementHoverEnd(e) {
     const element = e.target
-
-    // 忽略内部元素和画布本身
     if (!element || element.isInternal || element === this.app.tree) return
 
-    // 通知外部取消高亮
     if (this.callbacks.onLayerUnhover && element.innerId) {
       this.callbacks.onLayerUnhover(element.innerId)
     }
@@ -630,52 +697,44 @@ export const eventMixin = {
   handleKeydown(e) {
     if (this.isEditableElement(e.target)) return
 
-    const isMod = e.metaKey || e.ctrlKey // Cmd(Mac) 或 Ctrl(Win/Linux)
+    const isMod = e.metaKey || e.ctrlKey
 
-    // 复制快捷键: Cmd/Ctrl + C
+    // 复制: Cmd/Ctrl + C
     if (isMod && e.key === 'c') {
       e.preventDefault()
       this.copySelectedLayers()
       return
     }
 
-    // 快速复制快捷键: Cmd/Ctrl + D
+    // 快速复制: Cmd/Ctrl + D
     if (isMod && e.key === 'd') {
       e.preventDefault()
       const selected = this.app.editor.list
 
       if (selected.length === 1) {
-        // 单选：直接复制该图层
         this.duplicateLayer(selected[0].innerId)
       } else if (selected.length > 1) {
-        // 多选：使用复制粘贴
         this.copySelectedLayers()
         this.pasteLayer()
       }
       return
     }
 
-    // 撤销快捷键: Cmd/Ctrl + Z
+    // 撤销/重做: Cmd/Ctrl + Z / Cmd/Ctrl + Shift + Z
     if (isMod && e.key === 'z') {
       e.preventDefault()
-      if (e.shiftKey) {
-        // Cmd/Ctrl + Shift + Z: 重做
-        this.redo()
-      } else {
-        // Cmd/Ctrl + Z: 撤销
-        this.undo()
-      }
+      e.shiftKey ? this.redo() : this.undo()
       return
     }
 
-    // 重做快捷键: Cmd/Ctrl + Y
+    // 重做: Cmd/Ctrl + Y
     if (isMod && e.key === 'y') {
       e.preventDefault()
       this.redo()
       return
     }
 
-    // 删除快捷键: Backspace 或 Delete
+    // 删除: Backspace 或 Delete
     if (e.key === 'Backspace' || e.key === 'Delete') {
       e.preventDefault()
       this.removeSelectedLayers()

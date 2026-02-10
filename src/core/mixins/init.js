@@ -72,14 +72,9 @@ export const initMixin = {
   destroy() {
     if (!this.app) return
 
-    // 清理全局事件监听
-    const { keydown, paste, dragover, drop } = this.eventHandlers
-    if (keydown) window.removeEventListener('keydown', keydown)
-    if (paste) window.removeEventListener('paste', paste)
-
-    if (this.app.view) {
-      if (dragover) this.app.view.removeEventListener('dragover', dragover)
-      if (drop) this.app.view.removeEventListener('drop', drop)
+    // 清理事件监听（委托给 eventMixin）
+    if (this.destroyEvents) {
+      this.destroyEvents()
     }
 
     // 清理插件
@@ -93,6 +88,5 @@ export const initMixin = {
     // 销毁应用实例
     this.app.destroy()
     this.app = null
-    this.eventHandlers = {}
   }
 }
