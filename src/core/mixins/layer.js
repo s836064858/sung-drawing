@@ -1,4 +1,4 @@
-import { Rect, Ellipse, Text, Image, Group, Frame, Line, Polygon, Star, PropertyEvent } from 'leafer-ui'
+import { Rect, Ellipse, Text, Image, Group, Frame, Box, Line, Polygon, Star, PropertyEvent } from 'leafer-ui'
 import { Arrow } from '@leafer-in/arrow'
 import { setupFrameLabel } from '../utils/frame-helper'
 
@@ -13,6 +13,7 @@ const ELEMENT_TYPE_MAP = {
   Image,
   Group,
   Frame,
+  Box,
   Line,
   Polygon,
   Star,
@@ -69,9 +70,6 @@ export const layerMixin = {
         element.x = this.app.tree.width / 2 - (element.width || 0) / 2
         element.y = this.app.tree.height / 2 - (element.height || 0) / 2
       } else {
-        // 设置位置（考虑元素中心对齐或左上角对齐，通常拖拽是中心对齐体验更好，或者左上角）
-        // 这里假设 x, y 是目标中心点? 或者左上角?
-        // 通常 Drop 事件给的是鼠标位置。我们将元素中心对齐到鼠标位置。
         element.x = x - (element.width || 0) / 2
         element.y = y - (element.height || 0) / 2
       }
@@ -119,8 +117,9 @@ export const layerMixin = {
       isInternal: child.isInternal
     }
 
-    // 如果是 Frame，递归处理子图层
-    if (child.tag === 'Frame' && child.children && child.children.length > 0) {
+    // 如果是容器类型（Frame/Box/Group），递归处理子图层
+    const containerTags = new Set(['Frame', 'Box', 'Group'])
+    if (containerTags.has(child.tag) && child.children && child.children.length > 0) {
       layerData.children = child.children
         .filter((subChild) => !subChild.isInternal && !(subChild.data && subChild.data.isFrameLabel))
         .map((subChild) => this.formatLayerData(subChild))
@@ -314,7 +313,7 @@ export const layerMixin = {
 
     if (position === 'inside') {
       // 拖入容器内部
-      if (targetLayer.tag === 'Frame' || targetLayer.tag === 'Group') {
+      if (targetLayer.tag === 'Frame' || targetLayer.tag === 'Group' || targetLayer.tag === 'Box') {
         // 添加到容器末尾（最上层）
         targetLayer.add(dragLayer)
       } else {

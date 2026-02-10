@@ -214,6 +214,8 @@ const getTypeIcon = (type) => {
       return 'ri-layout-line'
     case 'Group':
       return 'ri-group-line'
+    case 'Box':
+      return 'ri-checkbox-blank-line'
     case 'Image':
       return 'ri-image-line'
     case 'Line':

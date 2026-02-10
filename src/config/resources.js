@@ -12,7 +12,7 @@ export const resourceCategories = [
         name: '主按钮',
         icon: 'ri-toggle-fill',
         data: {
-          tag: 'Group',
+          tag: 'Box',
           name: 'Button/Primary',
           children: [
             {
@@ -86,7 +86,7 @@ export const resourceCategories = [
               width: 248
             },
             {
-              tag: 'Group',
+              tag: 'Box',
               name: 'Action',
               x: 200,
               y: 120,
@@ -120,7 +120,7 @@ export const resourceCategories = [
         name: '输入框',
         icon: 'ri-input-cursor-move',
         data: {
-          tag: 'Group',
+          tag: 'Box',
           name: 'Input/Default',
           children: [
             {
@@ -226,7 +226,7 @@ export const resourceCategories = [
         name: '图表占位',
         icon: 'ri-bar-chart-line',
         data: {
-          tag: 'Group',
+          tag: 'Box',
           name: 'Chart/Bar',
           children: [
             {
