@@ -6,6 +6,9 @@
           <img :src="logoUrl" alt="Logo" class="logo-img" />
         </div>
         <span class="app-title">Sung Drawing</span>
+        <div class="collapse-btn-header" @click="toggleCollapse">
+          <i class="ri-side-bar-fill"></i>
+        </div>
       </div>
 
       <div class="left-panel-content">
@@ -38,12 +41,9 @@
       </div>
     </el-aside>
 
-    <div class="collapse-btn" @click="toggleCollapse" :style="{ left: isCollapsed ? '0' : '250px' }">
-      <i :class="isCollapsed ? 'ri-arrow-right-s-line' : 'ri-arrow-left-s-line'"></i>
-    </div>
-
-    <div class="collapsed-logo" v-show="isCollapsed">
+    <div class="collapsed-brand" v-show="isCollapsed" @click="toggleCollapse">
       <img :src="logoUrl" alt="Logo" class="mini-logo" />
+      <i class="ri-side-bar-line expand-icon"></i>
     </div>
 
     <el-main class="main-content">
@@ -207,48 +207,54 @@ const handleToolChange = (event) => {
   border-right: none;
 }
 
-.collapse-btn {
-  position: absolute;
-  top: 50%;
-  width: 24px;
-  height: 24px;
-  background-color: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 0 50% 50% 0;
-  border-left: none;
+.collapse-btn-header {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 20;
-  transform: translateY(-50%);
   color: #909399;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
-  transition:
-    left 0.3s ease,
-    color 0.2s,
-    box-shadow 0.2s;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.collapse-btn:hover {
+.collapse-btn-header:hover {
   color: var(--primary-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
-.collapsed-logo {
+.collapsed-brand {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  width: 32px;
-  height: 32px;
+  top: 10px;
+  left: 10px;
   z-index: 20;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 4px 8px 4px 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
   animation: fadeIn 0.3s ease;
+  transition: box-shadow 0.2s ease;
+}
+
+.collapsed-brand:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.collapsed-brand .expand-icon {
+  font-size: 16px;
+  color: #909399;
+  transition: color 0.2s;
+}
+
+.collapsed-brand:hover .expand-icon {
+  color: var(--primary-color);
 }
 
 .mini-logo {
