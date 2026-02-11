@@ -13,6 +13,7 @@
         <div class="panel-tabs">
           <div class="tab-item" :class="{ active: activeTab === 'layers' }" @click="activeTab = 'layers'">图层</div>
           <div class="tab-item" :class="{ active: activeTab === 'resources' }" @click="activeTab = 'resources'">资源</div>
+          <div class="tab-item" :class="{ active: activeTab === 'import' }" @click="activeTab = 'import'">导入</div>
         </div>
 
         <!-- 内容区域 -->
@@ -25,6 +26,10 @@
 
         <div class="panel-body" v-show="activeTab === 'resources'">
           <resource-panel />
+        </div>
+
+        <div class="panel-body" v-show="activeTab === 'import'">
+          <figma-import-panel />
         </div>
       </div>
 
@@ -63,6 +68,7 @@ import CanvasArea from './components/canvas-area.vue'
 import PropertyPanel from './components/property-panel.vue'
 import ToolbarPanel from './components/toolbar-panel.vue'
 import SizeInfo from './components/size-info.vue'
+import FigmaImportPanel from './components/figma-import-panel.vue'
 import logoUrl from '@/assets/image/logo.png'
 
 const canvasAreaRef = ref(null)
@@ -70,7 +76,7 @@ const activeTool = ref('select')
 const canUndo = ref(false)
 const canRedo = ref(false)
 const isCollapsed = ref(false)
-const activeTab = ref('layers') // 'layers' | 'resources'
+const activeTab = ref('layers') // 'layers' | 'resources' | 'import'
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value

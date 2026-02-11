@@ -4,6 +4,7 @@ import { layerMixin } from './mixins/layer'
 import { toolMixin } from './mixins/tool'
 import { exportMixin } from './mixins/export'
 import { historyMixin } from './mixins/history'
+import { importMixin } from './mixins/import'
 import '@leafer-in/export' // 引入导出插件
 
 /**
@@ -92,3 +93,4 @@ Object.assign(CanvasCore.prototype, layerMixin)
 Object.assign(CanvasCore.prototype, toolMixin)
 Object.assign(CanvasCore.prototype, exportMixin)
 Object.assign(CanvasCore.prototype, historyMixin)
+Object.assign(CanvasCore.prototype, importMixin)
