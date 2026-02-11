@@ -418,6 +418,35 @@
               />
             </div>
           </div>
+
+          <!-- 线条样式 -->
+          <div class="style-row" style="margin-top: 8px">
+            <div class="style-label" style="width: 120px">线条样式</div>
+            <div style="flex: 1">
+              <el-select
+                v-model="formData.dashStyle"
+                size="small"
+                class="figma-select dash-select"
+                :disabled="formData.locked"
+                @change="applyDashStyle"
+              >
+                <el-option v-for="style in dashStyles" :key="style.value" :label="style.label" :value="style.value">
+                  <div class="dash-option">
+                    <svg width="48" height="2" viewBox="0 0 48 2" style="vertical-align: middle; margin-right: 8px">
+                      <line
+                        x1="0" y1="1" x2="48" y2="1"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        :stroke-dasharray="style.preview"
+                        :stroke-linecap="style.cap || 'butt'"
+                      />
+                    </svg>
+                    <span>{{ style.label }}</span>
+                  </div>
+                </el-option>
+              </el-select>
+            </div>
+          </div>
         </div>
 
         <div class="separator"></div>
@@ -636,6 +665,14 @@ const fontFamilies = [
   }
 ]
 
+const dashStyles = [
+  { value: 'solid', label: '实线', pattern: [], preview: 'none', cap: 'butt' },
+  { value: 'dash', label: '虚线', pattern: [8, 4], preview: '8,4', cap: 'butt' },
+  { value: 'dot', label: '点线', pattern: [2, 4], preview: '2,4', cap: 'round' },
+  { value: 'dash-dot', label: '点划线', pattern: [8, 4, 2, 4], preview: '8,4,2,4', cap: 'butt' },
+  { value: 'long-dash', label: '长虚线', pattern: [16, 6], preview: '16,6', cap: 'butt' },
+]
+
 const formData = reactive({
   x: 0,
   y: 0,
@@ -649,6 +686,7 @@ const formData = reactive({
   fill: '',
   stroke: '',
   strokeWidth: 0,
+  dashStyle: 'solid',
   // Typography
   text: '',
   fontSize: 12,
@@ -753,6 +791,7 @@ const handlePropertyChange = (e) => {
     'fill',
     'stroke',
     'strokeWidth',
+    'dashPattern',
     'text',
     'fontSize',
     'fontFamily',
@@ -776,6 +815,8 @@ const handlePropertyChange = (e) => {
     formData.lineHeight = typeof currentElement.value.lineHeight === 'object' ? 0 : currentElement.value.lineHeight || 0
   } else if (e.attrName === 'fill' || e.attrName === 'stroke') {
     formData[e.attrName] = getColorValue(currentElement.value[e.attrName])
+  } else if (e.attrName === 'dashPattern') {
+    formData.dashStyle = inferDashStyle(currentElement.value.dashPattern)
   } else if (e.attrName === 'shadow' || e.attrName === 'innerShadow') {
     syncShadowFromElement(e.attrName)
   } else {
@@ -810,6 +851,7 @@ const syncFromElement = (element) => {
   }
 
   formData.strokeWidth = element.strokeWidth ?? 0
+  formData.dashStyle = inferDashStyle(element.dashPattern)
   formData.locked = element.locked ?? false
 
   // 同步文本属性
@@ -1074,6 +1116,31 @@ const toggleFlip = (type) => {
     const newScaleY = (currentElement.value.scaleY ?? 1) * -1
     updateProperty('scaleY', newScaleY)
   }
+}
+
+const applyDashStyle = (styleValue) => {
+  if (!currentElement.value) return
+  const style = dashStyles.find(s => s.value === styleValue)
+  if (!style) return
+
+  formData.dashStyle = styleValue
+  currentElement.value.dashPattern = style.pattern.length > 0 ? style.pattern : undefined
+
+  const canvasCore = getCanvasCore()
+  if (canvasCore && canvasCore.debouncedRecordState) {
+    canvasCore.debouncedRecordState('property-change')
+  }
+}
+
+// 根据 dashPattern 推断 dashStyle
+const inferDashStyle = (pattern) => {
+  if (!pattern || !Array.isArray(pattern) || pattern.length === 0) return 'solid'
+  for (const style of dashStyles) {
+    if (style.pattern.length === pattern.length && style.pattern.every((v, i) => v === pattern[i])) {
+      return style.value
+    }
+  }
+  return 'dash' // 默认归为虚线
 }
 
 onUnmounted(() => {
@@ -1528,5 +1595,28 @@ onUnmounted(() => {
 .export-btn {
   width: 100%;
   justify-content: center;
+}
+
+/* Dash Style Select */
+.dash-option {
+  display: flex;
+  align-items: center;
+}
+
+:deep(.dash-select .el-input__wrapper) {
+  box-shadow: none !important;
+  background-color: #f5f5f5;
+  padding: 0 8px !important;
+  height: 28px;
+}
+
+:deep(.dash-select .el-input__wrapper:hover) {
+  background-color: #eeeeee;
+  box-shadow: 0 0 0 1px #e0e0e0 inset !important;
+}
+
+:deep(.dash-select .el-input__wrapper.is-focus) {
+  background-color: #fff;
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
 }
 </style>
