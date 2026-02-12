@@ -6,6 +6,9 @@
           <img :src="logoUrl" alt="Logo" class="logo-img" />
         </div>
         <span class="app-title">Sung Drawing</span>
+        <a class="github-link" href="https://github.com/s836064858/sung-drawing" target="_blank" rel="noopener noreferrer" title="GitHub">
+          <img src="https://github.githubassets.com/favicons/favicon.svg" alt="GitHub" class="github-icon" />
+        </a>
         <div class="collapse-btn-header" @click="toggleCollapse">
           <i class="ri-side-bar-fill"></i>
         </div>
@@ -207,8 +210,36 @@ const handleToolChange = (event) => {
   border-right: none;
 }
 
-.collapse-btn-header {
+.github-link {
   margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.github-link:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.github-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.github-link:hover .github-icon {
+  opacity: 1;
+}
+
+.collapse-btn-header {
+  margin-left: 4px;
   width: 28px;
   height: 28px;
   display: flex;
