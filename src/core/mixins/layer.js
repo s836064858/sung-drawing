@@ -82,6 +82,28 @@ export const layerMixin = {
   },
 
   /**
+   * 全选图层
+   */
+  selectAllLayers() {
+    if (!this.app || !this.app.tree) return
+
+    // 获取所有非锁定、非隐藏的可编辑图层
+    const selectCandidates = this.app.tree.children.filter((child) => {
+      // 排除辅助元素
+      if (child.isInternal || child.isFrameLabel || child.tag === 'SimulateElement') return false
+      // 排除锁定和隐藏的元素
+      if (child.locked || !child.visible) return false
+      // 必须是可交互的
+      if (!child.hittable) return false
+      return true
+    })
+
+    if (selectCandidates.length > 0) {
+      this.app.editor.select(selectCandidates)
+    }
+  },
+
+  /**
    * 同步图层列表到外部
    */
   syncLayers() {

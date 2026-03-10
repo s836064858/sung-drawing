@@ -734,6 +734,39 @@ export const eventMixin = {
       return
     }
 
+    // 全选: Cmd/Ctrl + A
+    if (isMod && e.key === 'a') {
+      e.preventDefault()
+      this.selectAllLayers()
+      return
+    }
+
+    // 缩放: Cmd/Ctrl + = / Cmd/Ctrl + -
+    if (isMod && (e.key === '=' || e.key === '+' || e.key === '-')) {
+      e.preventDefault()
+
+      const zoomStep = 0.1
+      let currentScale = this.app.tree.scaleX // 假设 x y 缩放一致
+
+      if (e.key === '=' || e.key === '+') {
+        // 放大
+        this.app.tree.zoom('in')
+      } else {
+        // 缩小
+        this.app.tree.zoom('out')
+      }
+      return
+    }
+
+    // 重置缩放: Cmd/Ctrl + 0
+    if (isMod && e.key === '0') {
+      e.preventDefault()
+      this.app.tree.zoom(1) // 重置为 100%
+      // 或者使用 fit view
+      // this.app.tree.zoom('fit')
+      return
+    }
+
     // 删除: Backspace 或 Delete
     if (e.key === 'Backspace' || e.key === 'Delete') {
       e.preventDefault()

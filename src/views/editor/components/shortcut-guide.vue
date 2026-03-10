@@ -67,6 +67,10 @@ const commonShortcuts = [
   { keys: ['⇧', '⌘', 'Z'], label: '重做' },
   { keys: ['⌘', 'C'], label: '复制' },
   { keys: ['⌘', 'D'], label: '快速复制' },
+  { keys: ['⌘', 'A'], label: '全选' },
+  { keys: ['⌘', '+'], label: '放大' },
+  { keys: ['⌘', '-'], label: '缩小' },
+  { keys: ['⌘', '0'], label: '重置缩放' },
   { keys: ['⌫'], label: '删除' },
   { keys: ['Space'], label: '抓手工具' }
 ]
