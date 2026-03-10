@@ -56,7 +56,15 @@
       </div>
       <size-info />
     </el-main>
-    <el-aside width="300px">
+
+    <div class="right-collapsed-brand" v-show="isRightCollapsed" @click="toggleRightCollapse">
+      <i class="ri-side-bar-line expand-icon" style="transform: rotate(180deg)"></i>
+    </div>
+
+    <el-aside :width="isRightCollapsed ? '0px' : '300px'" class="right-aside" :class="{ collapsed: isRightCollapsed }">
+      <div class="right-collapse-btn" @click="toggleRightCollapse">
+        <i class="ri-side-bar-fill" style="transform: rotate(180deg)"></i>
+      </div>
       <property-panel />
     </el-aside>
   </el-container>
@@ -79,10 +87,15 @@ const activeTool = ref('select')
 const canUndo = ref(false)
 const canRedo = ref(false)
 const isCollapsed = ref(false)
+const isRightCollapsed = ref(false)
 const activeTab = ref('layers') // 'layers' | 'resources' | 'import'
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
+}
+
+const toggleRightCollapse = () => {
+  isRightCollapsed.value = !isRightCollapsed.value
 }
 
 // 提供 getCanvasCore 方法给子组件 (LayerPanel) 使用
@@ -370,5 +383,75 @@ const handleToolChange = (event) => {
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
+}
+
+.right-aside {
+  border-left: 1px solid #e5e7eb;
+  background-color: #fff;
+  z-index: 10;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.right-aside.collapsed {
+  border-left: none;
+}
+
+.right-aside :deep(.property-panel) {
+  min-width: 300px;
+}
+
+.right-collapse-btn {
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #909399;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  z-index: 20;
+}
+
+.right-collapse-btn:hover {
+  color: var(--primary-color);
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.right-collapsed-brand {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  animation: fadeIn 0.3s ease;
+  transition: box-shadow 0.2s ease;
+}
+
+.right-collapsed-brand:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.right-collapsed-brand .expand-icon {
+  font-size: 16px;
+  color: #909399;
+  transition: color 0.2s;
+}
+
+.right-collapsed-brand:hover .expand-icon {
+  color: var(--primary-color);
 }
 </style>
