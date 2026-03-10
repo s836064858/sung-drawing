@@ -1,7 +1,7 @@
 <template>
-  <div class="shortcut-guide-container" :class="{ collapsed: isCollapsed }">
+  <div class="shortcut-guide-container" :class="{ collapsed: isCollapsed }" ref="guideRef">
     <!-- 折叠后的图标按钮 -->
-    <div class="shortcut-icon-btn" v-if="isCollapsed" @click="toggleCollapse">
+    <div class="shortcut-icon-btn" v-if="isCollapsed" @click.stop="toggleCollapse">
       <el-tooltip content="快捷键" placement="right">
         <i class="ri-keyboard-line icon"></i>
       </el-tooltip>
@@ -54,26 +54,50 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 
 const isCollapsed = ref(true)
+const isMac = ref(true)
+const guideRef = ref(null)
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
 }
 
-const commonShortcuts = [
-  { keys: ['⌘', 'Z'], label: '撤销' },
-  { keys: ['⇧', '⌘', 'Z'], label: '重做' },
-  { keys: ['⌘', 'C'], label: '复制' },
-  { keys: ['⌘', 'D'], label: '快速复制' },
-  { keys: ['⌘', 'A'], label: '全选' },
-  { keys: ['⌘', '+'], label: '放大' },
-  { keys: ['⌘', '-'], label: '缩小' },
-  { keys: ['⌘', '0'], label: '重置缩放' },
-  { keys: ['⌫'], label: '删除' },
+const handleClickOutside = (event) => {
+  if (isCollapsed.value) return
+  if (guideRef.value && !guideRef.value.contains(event.target)) {
+    isCollapsed.value = true
+  }
+}
+
+onMounted(() => {
+  // 检测是否为 Mac 系统
+  isMac.value = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
+
+  // 监听全局点击事件
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+const modKey = computed(() => (isMac.value ? '⌘' : 'Ctrl'))
+const shiftKey = computed(() => (isMac.value ? '⇧' : 'Shift'))
+
+const commonShortcuts = computed(() => [
+  { keys: [modKey.value, 'Z'], label: '撤销' },
+  { keys: [shiftKey.value, modKey.value, 'Z'], label: '重做' },
+  { keys: [modKey.value, 'C'], label: '复制' },
+  { keys: [modKey.value, 'D'], label: '快速复制' },
+  { keys: [modKey.value, 'A'], label: '全选' },
+  { keys: [modKey.value, '+'], label: '放大' },
+  { keys: [modKey.value, '-'], label: '缩小' },
+  { keys: [modKey.value, '0'], label: '重置缩放' },
+  { keys: [isMac.value ? '⌫' : 'Del'], label: '删除' },
   { keys: ['Space'], label: '抓手工具' }
-]
+])
 
 const toolShortcuts = []
 </script>
