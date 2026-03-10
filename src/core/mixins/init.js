@@ -17,7 +17,9 @@ export const initMixin = {
 
     this.app = new App({
       view: this.view,
-      editor: {},
+      editor: {
+        lockRatio: 'corner' // 锁定四角缩放比例，中间点自由调整
+      },
       tree: {
         type: 'design'
       }
