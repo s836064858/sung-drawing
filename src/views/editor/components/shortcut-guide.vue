@@ -234,6 +234,14 @@ const toolShortcuts = []
   justify-content: space-between;
   font-size: 13px;
   color: #606266;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  cursor: default;
+}
+
+.shortcut-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 .keys-wrapper {
