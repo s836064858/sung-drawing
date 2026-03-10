@@ -55,6 +55,7 @@
         <toolbar-panel :active-tool="activeTool" :can-undo="canUndo" :can-redo="canRedo" @tool-change="handleToolChange" />
       </div>
       <size-info />
+      <shortcut-guide />
     </el-main>
 
     <div class="right-collapsed-brand" v-show="isRightCollapsed" @click="toggleRightCollapse">
@@ -80,6 +81,7 @@ import PropertyPanel from './components/property-panel.vue'
 import ToolbarPanel from './components/toolbar-panel.vue'
 import SizeInfo from './components/size-info.vue'
 import FigmaImportPanel from './components/figma-import-panel.vue'
+import ShortcutGuide from './components/shortcut-guide.vue'
 import logoUrl from '@/assets/image/logo.png'
 
 const canvasAreaRef = ref(null)

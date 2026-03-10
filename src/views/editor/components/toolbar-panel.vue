@@ -13,13 +13,13 @@
 
     <div class="divider"></div>
 
-    <el-tooltip content="选择模式 (V)" placement="top">
+    <el-tooltip content="选择模式" placement="top">
       <div class="tool-item" :class="{ active: activeTool === 'select' }" @click="handleToolClick('select')">
         <i class="ri-cursor-fill"></i>
       </div>
     </el-tooltip>
 
-    <el-tooltip content="移动模式 (H)" placement="top">
+    <el-tooltip content="移动模式" placement="top">
       <div class="tool-item" :class="{ active: activeTool === 'move' }" @click="handleToolClick('move')">
         <i class="ri-drag-move-line"></i>
       </div>
@@ -27,7 +27,7 @@
 
     <div class="divider"></div>
 
-    <el-tooltip content="钢笔 (P)" placement="top">
+    <el-tooltip content="钢笔" placement="top">
       <div class="tool-item" :class="{ active: activeTool === 'pen' }" @click="handleToolClick('pen')">
         <i class="ri-pen-nib-line"></i>
       </div>
@@ -53,13 +53,13 @@
       </template>
     </el-dropdown>
 
-    <el-tooltip content="Frame (F)" placement="top">
+    <el-tooltip content="Frame" placement="top">
       <div class="tool-item" :class="{ active: activeTool === 'frame' }" @click="handleToolClick('frame')">
         <i class="ri-layout-line"></i>
       </div>
     </el-tooltip>
 
-    <el-tooltip content="文字 (T)" placement="top">
+    <el-tooltip content="文字" placement="top">
       <div class="tool-item" :class="{ active: activeTool === 'text' }" @click="handleToolClick('text')">
         <i class="ri-text"></i>
       </div>
