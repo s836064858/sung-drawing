@@ -18,7 +18,9 @@ export const initMixin = {
     this.app = new App({
       view: this.view,
       editor: {
-        lockRatio: 'corner' // 锁定四角缩放比例，中间点自由调整
+        lockRatio: 'corner', // 锁定四角缩放比例，中间点自由调整
+        // 配置多选键：支持 Shift、Ctrl 或 Command (Mac) 键进行多选
+        multipleSelectKey: (e) => e.shiftKey || e.ctrlKey || e.metaKey
       },
       tree: {
         type: 'design'
