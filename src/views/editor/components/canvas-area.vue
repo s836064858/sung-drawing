@@ -111,6 +111,15 @@ const handleContextMenu = (e) => {
   // 阻止默认右键菜单
   e.preventDefault()
 
+  // Mac 下 Ctrl+Click 触发的 contextmenu 事件，如果是为了多选，则不显示菜单
+  // 注意：在 Web 中 Mac Ctrl+Click 的 button 可能是 0 或 2，取决于浏览器实现
+  // 如果是多选意图（按下了 Ctrl 键且是 Mac），我们不显示菜单，让 Leafer 处理多选
+  // Leafer 的 pointerdown 已经在 contextmenu 之前触发了多选逻辑
+  const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
+  if (isMac && e.ctrlKey) {
+    return
+  }
+
   contextMenuPosition.value = { x: e.clientX, y: e.clientY }
   contextMenuVisible.value = true
 }
