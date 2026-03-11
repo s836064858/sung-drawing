@@ -6,6 +6,7 @@ import { exportMixin } from './mixins/export'
 import { historyMixin } from './mixins/history'
 import { importMixin } from './mixins/import'
 import { groupMixin } from './mixins/group'
+import { alignMixin } from './mixins/align'
 import '@leafer-in/export' // 引入导出插件
 
 /**
@@ -96,3 +97,4 @@ Object.assign(CanvasCore.prototype, exportMixin)
 Object.assign(CanvasCore.prototype, historyMixin)
 Object.assign(CanvasCore.prototype, importMixin)
 Object.assign(CanvasCore.prototype, groupMixin)
+Object.assign(CanvasCore.prototype, alignMixin)

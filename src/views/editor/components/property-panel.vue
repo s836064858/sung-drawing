@@ -9,7 +9,44 @@
         <!-- Position Section -->
         <div class="section-title">位置</div>
 
-        <div class="property-grid">
+        <!-- Align Section (Integrated) -->
+        <div class="property-input-wrapper align-wrapper">
+          <div class="input-label">对齐</div>
+          <div class="align-row">
+            <el-tooltip content="左对齐" placement="top">
+              <div class="icon-btn" :class="{ disabled: !isInFrame }" @click="isInFrame && handleAlign('left')">
+                <i class="ri-align-left"></i>
+              </div>
+            </el-tooltip>
+            <el-tooltip content="水平居中" placement="top">
+              <div class="icon-btn" :class="{ disabled: !isInFrame }" @click="isInFrame && handleAlign('center')">
+                <i class="ri-align-center"></i>
+              </div>
+            </el-tooltip>
+            <el-tooltip content="右对齐" placement="top">
+              <div class="icon-btn" :class="{ disabled: !isInFrame }" @click="isInFrame && handleAlign('right')">
+                <i class="ri-align-right"></i>
+              </div>
+            </el-tooltip>
+            <el-tooltip content="顶对齐" placement="top">
+              <div class="icon-btn" :class="{ disabled: !isInFrame }" @click="isInFrame && handleAlign('top')">
+                <i class="ri-align-top"></i>
+              </div>
+            </el-tooltip>
+            <el-tooltip content="垂直居中" placement="top">
+              <div class="icon-btn" :class="{ disabled: !isInFrame }" @click="isInFrame && handleAlign('middle')">
+                <i class="ri-align-vertically"></i>
+              </div>
+            </el-tooltip>
+            <el-tooltip content="底对齐" placement="top">
+              <div class="icon-btn" :class="{ disabled: !isInFrame }" @click="isInFrame && handleAlign('bottom')">
+                <i class="ri-align-bottom"></i>
+              </div>
+            </el-tooltip>
+          </div>
+        </div>
+
+        <div class="property-grid" style="margin-top: 8px">
           <div class="property-input-wrapper">
             <div class="input-label">X</div>
             <el-input-number
@@ -423,18 +460,15 @@
           <div class="style-row" style="margin-top: 8px">
             <div class="style-label" style="width: 120px">线条样式</div>
             <div style="flex: 1">
-              <el-select
-                v-model="formData.dashStyle"
-                size="small"
-                class="figma-select dash-select"
-                :disabled="formData.locked"
-                @change="applyDashStyle"
-              >
+              <el-select v-model="formData.dashStyle" size="small" class="figma-select dash-select" :disabled="formData.locked" @change="applyDashStyle">
                 <el-option v-for="style in dashStyles" :key="style.value" :label="style.label" :value="style.value">
                   <div class="dash-option">
                     <svg width="48" height="2" viewBox="0 0 48 2" style="vertical-align: middle; margin-right: 8px">
                       <line
-                        x1="0" y1="1" x2="48" y2="1"
+                        x1="0"
+                        y1="1"
+                        x2="48"
+                        y2="1"
                         stroke="currentColor"
                         stroke-width="2"
                         :stroke-dasharray="style.preview"
@@ -670,7 +704,7 @@ const dashStyles = [
   { value: 'dash', label: '虚线', pattern: [8, 4], preview: '8,4', cap: 'butt' },
   { value: 'dot', label: '点线', pattern: [2, 4], preview: '2,4', cap: 'round' },
   { value: 'dash-dot', label: '点划线', pattern: [8, 4, 2, 4], preview: '8,4,2,4', cap: 'butt' },
-  { value: 'long-dash', label: '长虚线', pattern: [16, 6], preview: '16,6', cap: 'butt' },
+  { value: 'long-dash', label: '长虚线', pattern: [16, 6], preview: '16,6', cap: 'butt' }
 ]
 
 const formData = reactive({
@@ -740,6 +774,25 @@ const selectedLayerIds = computed(() => store.state.selectedLayerIds)
 const hasSelection = computed(() => selectedLayerIds.value.length === 1)
 const hasAnySelection = computed(() => selectedLayerIds.value.length > 0)
 const isTextElement = computed(() => currentElement.value && currentElement.value.tag === 'Text')
+
+const isInFrame = computed(() => {
+  if (!hasAnySelection.value) return false
+  const canvasCore = getCanvasCore()
+  if (!canvasCore) return false
+
+  // 检查所有选中元素是否都在 Frame 中
+  return selectedLayerIds.value.every((id) => {
+    const element = canvasCore.findElementById(id)
+    return element && element.parent && element.parent.tag === 'Frame'
+  })
+})
+
+const handleAlign = (type) => {
+  const canvasCore = getCanvasCore()
+  if (canvasCore) {
+    canvasCore.alignSelected(type)
+  }
+}
 
 const exportButtonText = computed(() => {
   const count = selectedLayerIds.value.length
@@ -1120,7 +1173,7 @@ const toggleFlip = (type) => {
 
 const applyDashStyle = (styleValue) => {
   if (!currentElement.value) return
-  const style = dashStyles.find(s => s.value === styleValue)
+  const style = dashStyles.find((s) => s.value === styleValue)
   if (!style) return
 
   formData.dashStyle = styleValue
@@ -1232,6 +1285,36 @@ onUnmounted(() => {
 }
 
 /* Empty State */
+/* Align Section */
+.align-wrapper {
+  padding: 4px 8px 4px 40px;
+  justify-content: space-between;
+  min-height: 32px;
+}
+
+.align-row {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.align-row .icon-btn {
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+}
+
+.align-row .icon-btn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.align-row .icon-btn.disabled:hover {
+  background-color: transparent;
+  color: #666;
+}
+
 .empty-state {
   height: 100%;
   display: flex;
