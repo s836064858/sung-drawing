@@ -12,6 +12,18 @@
             <span>快速复制</span>
             <span class="shortcut">⌘D</span>
           </div>
+          <div class="menu-item-group">
+            <div class="menu-item">
+              <span>导出</span>
+              <i class="ri-arrow-right-s-line"></i>
+            </div>
+            <div class="submenu">
+              <div class="menu-item" @click="handleMenuAction('export', 'json')">导出 JSON</div>
+              <div class="menu-item" @click="handleMenuAction('export', 'figma')">导出 Figma JSON</div>
+              <div class="menu-item" @click="handleMenuAction('export', 'png')">导出 PNG</div>
+              <div class="menu-item" @click="handleMenuAction('export', 'jpg')">导出 JPEG</div>
+            </div>
+          </div>
           <div class="menu-item" @click="handleMenuAction('delete')">
             <span class="delete-text">删除</span>
             <span class="shortcut">Del</span>
@@ -128,7 +140,7 @@ const closeContextMenu = () => {
   contextMenuVisible.value = false
 }
 
-const handleMenuAction = (action) => {
+const handleMenuAction = (action, type) => {
   if (!canvasCore) return
 
   switch (action) {
@@ -146,6 +158,20 @@ const handleMenuAction = (action) => {
       } else if (selectedLayerIds.value.length === 1) {
         canvasCore.duplicateLayer(selectedLayerIds.value[0])
       }
+      break
+    case 'export':
+      const ids = selectedLayerIds.value
+      if (!ids.length) return
+
+      let filename = 'layer'
+      if (ids.length === 1) {
+        const layer = canvasCore.findElementById(ids[0])
+        if (layer) filename = layer.name || 'layer'
+      } else {
+        filename = 'layers'
+      }
+
+      canvasCore.exportSelection(type, filename)
       break
     case 'delete':
       canvasCore.removeSelectedLayers()
@@ -269,6 +295,27 @@ defineExpose({
 
 .menu-group {
   padding: 2px 0;
+}
+
+.menu-item-group {
+  position: relative;
+}
+
+.menu-item-group:hover .submenu {
+  display: block;
+}
+
+.submenu {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 4px 0;
+  min-width: 120px;
 }
 
 .menu-item {

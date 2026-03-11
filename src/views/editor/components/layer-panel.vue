@@ -4,13 +4,13 @@
       <i class="ri-stack-line icon"></i>
       <h3>图层</h3>
     </div>
-    
+
     <!-- 多选提示 -->
     <div v-if="selectedLayerIds.length > 1" class="multi-select-hint">
       <i class="ri-checkbox-multiple-line"></i>
       <span>已选中 {{ selectedLayerIds.length }} 个图层</span>
     </div>
-    
+
     <div class="panel-content custom-scrollbar" @dragover.prevent @drop="onPanelDrop">
       <div v-if="layers.length > 0" class="layer-list">
         <LayerItem
@@ -64,6 +64,18 @@
         <div class="menu-item" @click="handleMenuAction('duplicate')">
           <span>复制图层</span>
           <span class="shortcut">⌘D</span>
+        </div>
+        <div class="menu-item-group">
+          <div class="menu-item">
+            <span>导出</span>
+            <i class="ri-arrow-right-s-line"></i>
+          </div>
+          <div class="submenu">
+            <div class="menu-item" @click="handleMenuAction('export', 'json')">导出 JSON</div>
+            <div class="menu-item" @click="handleMenuAction('export', 'figma')">导出 Figma JSON</div>
+            <div class="menu-item" @click="handleMenuAction('export', 'png')">导出 PNG</div>
+            <div class="menu-item" @click="handleMenuAction('export', 'jpg')">导出 JPEG</div>
+          </div>
         </div>
         <div class="menu-item" @click="handleMenuAction('group')">
           <span>编组</span>
@@ -122,7 +134,7 @@ const handleContextMenu = (e, layer) => {
   }
 }
 
-const handleMenuAction = (action) => {
+const handleMenuAction = (action, type) => {
   const core = getCore()
   if (!core || !contextMenuTarget.value) return
 
@@ -143,6 +155,11 @@ const handleMenuAction = (action) => {
       break
     case 'duplicate':
       core.duplicateLayer(id)
+      break
+    case 'export':
+      // 选中当前图层以进行导出
+      core.selectLayer(id)
+      core.exportSelection(type, contextMenuTarget.value.name || 'layer')
       break
     case 'group':
       core.groupSelected()
@@ -180,7 +197,7 @@ const handleMenuAction = (action) => {
 const handleRenameConfirm = (id, newName) => {
   const core = getCore()
   if (core && newName && newName.trim()) {
-    core.renameLayer(id, newName.trim())
+    core.renameLayer(id, newName)
   }
   renamingLayerId.value = null
 }
@@ -303,7 +320,7 @@ const handleSelect = (layer, event) => {
     // 多选逻辑
     const isMod = event?.metaKey || event?.ctrlKey // Cmd/Ctrl 多选
     const isShift = event?.shiftKey // Shift 范围选择
-    
+
     if (isMod) {
       // Cmd/Ctrl 点击：切换选中状态
       core.toggleLayerSelection(layer.id)
@@ -499,6 +516,27 @@ const handleHoverEnd = (layer) => {
   font-size: 12px;
   color: #909399;
   line-height: 24px;
+}
+
+.menu-item-group {
+  position: relative;
+}
+
+.menu-item-group:hover .submenu {
+  display: block;
+}
+
+.submenu {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 4px 0;
+  min-width: 120px;
 }
 
 .menu-item {

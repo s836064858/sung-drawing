@@ -1,76 +1,108 @@
 import { Group } from 'leafer-ui'
+import { convertToFigma } from '../utils/figma-exporter'
 
 export const exportMixin = {
   /**
    * 导出选中元素
-   * @param {object} options 导出选项 { scale, format, quality }
+   * @param {string} type 导出类型 'json' | 'png' | 'jpg' | 'figma'
+   * @param {string} filename 文件名
    */
-  async exportSelection(options = {}) {
-    // 获取编辑器选中的元素列表
-    const { list } = this.app.editor
-    if (!list || list.length === 0) return
+  async exportSelection(type = 'json', filename) {
+    // 获取选中的元素列表
+    const selection = this.app.editor.list
+    if (!selection || selection.length === 0) return
 
-    const { scale = 1, format = 'png', quality = 1 } = options
+    if (type === 'json') {
+      const json = selection.length === 1 ? selection[0].toJSON() : selection.map((node) => node.toJSON())
+      const name = filename || (selection.length === 1 ? selection[0].name || 'layer' : 'layers')
+      this.downloadJson(json, name)
+      return
+    }
+
+    if (type === 'figma') {
+      const figmaNodes = selection.map((node) => convertToFigma(node)).filter(Boolean)
+
+      // 构造符合 Figma 文件结构的 JSON
+      const figmaJson = {
+        document: {
+          id: '0:0',
+          name: 'Document',
+          type: 'DOCUMENT',
+          children: [
+            {
+              id: '0:1',
+              name: 'Page 1',
+              type: 'CANVAS',
+              backgroundColor: { r: 0.96, g: 0.96, b: 0.96, a: 1 },
+              children: figmaNodes
+            }
+          ]
+        },
+        schemaVersion: 0,
+        name: filename || 'figma-export'
+      }
+
+      this.downloadJson(figmaJson, (filename || 'figma-export') + '.fig')
+      return
+    }
+
+    // 导出图片 (png/jpg)
+    const format = type === 'jpg' ? 'jpg' : 'png'
 
     // 如果只选中一个元素，直接导出
-    // 这也涵盖了 "如果选中的为frame，则导出其下所有" 的情况（Frame 本身就是个容器）
-    if (list.length === 1) {
-      const element = list[0]
-      const name = element.name || 'export'
-      const filename = `${name}.${format}`
-      return await element.export(filename, { scale, format, quality })
+    if (selection.length === 1) {
+      const element = selection[0]
+      const name = filename || element.name || 'export'
+      // Leafer 的 export 方法会自动触发下载
+      return await element.export(name + '.' + format, { type: format })
     }
 
-    // 多选情况：创建一个临时组，将所有选中元素克隆并放入其中，然后导出该组
-    // 这样可以导出成一张图
-    const tempGroup = new Group()
+    // 多选导出为一张图
+    // 创建临时组
+    const group = new Group()
 
-    // 我们不将 tempGroup 添加到画布树中，以免造成闪烁
-    // 直接操作 tempGroup 进行导出
+    // 计算所有选中元素的包围盒
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity
 
-    // 计算包围盒并调整位置
-    // 我们需要将所有元素在世界坐标系下的相对位置保持一致
-
-    // 1. 收集所有克隆体并计算整体的世界包围盒
-    // 注意：这里我们通过克隆体来计算，或者直接用 list 计算
-
-    // 为了简单，我们先把所有克隆体加到 tempGroup，并应用它们的世界变换
-    list.forEach((element) => {
-      if (element.clone) {
-        const clone = element.clone()
-        // 获取原始元素的世界变换矩阵
-        const worldTransform = element.worldTransform
-        // 应用到克隆体 (将克隆体的局部变换设置为原始元素的世界变换)
-        if (worldTransform && clone.setTransform) {
-          clone.setTransform(worldTransform)
-        }
-        tempGroup.add(clone)
-      }
+    selection.forEach((node) => {
+      const bounds = node.worldBox
+      minX = Math.min(minX, bounds.x)
+      minY = Math.min(minY, bounds.y)
+      maxX = Math.max(maxX, bounds.x + bounds.width)
+      maxY = Math.max(maxY, bounds.y + bounds.height)
     })
 
-    // 2. 获取临时组的包围盒（此时它是世界坐标系下的）
-    const bounds = tempGroup.getBounds()
+    // 将选中元素克隆并添加到临时组
+    selection.forEach((node) => {
+      const clone = node.clone()
+      // 保持相对位置
+      clone.x = node.worldBox.x - minX
+      clone.y = node.worldBox.y - minY
+      group.add(clone)
+    })
 
-    // 3. 导出
-    // 使用 bounds 来指定导出区域，避免导出多余的空白（如果 tempGroup 在 0,0，而内容在 1000,1000）
-    const filename = `export_selection.${format}`
+    const name = filename || 'export_selection'
+    // 导出临时组
+    await group.export(name + '.' + format, { type: format })
+    group.destroy()
+  },
 
-    try {
-      await tempGroup.export(filename, {
-        scale,
-        format,
-        quality,
-        // 裁剪导出区域
-        x: bounds.x,
-        y: bounds.y,
-        width: bounds.width,
-        height: bounds.height
-      })
-    } catch (error) {
-      console.error('Export failed:', error)
-    } finally {
-      // 销毁临时组
-      tempGroup.destroy()
-    }
+  /**
+   * 下载 JSON 文件
+   */
+  downloadJson(json, filename) {
+    const jsonStr = JSON.stringify(json, null, 2)
+    const blob = new Blob([jsonStr], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename.endsWith('.json') ? filename : `${filename}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 }

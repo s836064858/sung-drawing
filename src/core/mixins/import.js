@@ -1,5 +1,4 @@
 import { parseFigmaFile, fetchFigmaFile, extractFigmaFileKey, extractFigmaNodeId } from '../utils/figma-parser'
-import { deserializeElement } from '../utils/element-serializer'
 import { setupFrameLabel } from '../utils/frame-helper'
 import { getElementTypeMap } from '../utils/element-serializer'
 
@@ -7,10 +6,85 @@ const ELEMENT_TYPE_MAP = getElementTypeMap()
 
 export const importMixin = {
   /**
+   * 统一导入入口
+   * @param {Object|string} data 导入的数据 (JSON 对象或字符串)
+   * @param {string} type 导入类型 'json' | 'figma-api'
+   * @param {Object} options 导入选项
+   */
+  async importData(data, type = 'json', options = {}) {
+    if (!data) return 0
+
+    try {
+      if (type === 'figma-api') {
+        const { url, token } = data
+        return await this.importFromFigmaAPI(url, token)
+      }
+
+      // JSON 导入处理
+      const content = typeof data === 'string' ? JSON.parse(data) : data
+
+      // 1. 尝试检测是否为原生 Leafer JSON
+      if (this._isNativeFormat(content)) {
+        return this._importNativeJson(content, options)
+      }
+
+      // 2. 尝试作为 Figma JSON 导入
+      return this.importFromFigmaJSON(content)
+    } catch (error) {
+      console.error('导入失败:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 检测是否为原生 Leafer 格式
+   */
+  _isNativeFormat(data) {
+    if (Array.isArray(data)) {
+      return data.some((item) => item.tag && item.innerId)
+    }
+    if (data.tag && (data.children || data.innerId)) {
+      return true
+    }
+    return false
+  },
+
+  /**
+   * 导入原生 JSON
+   */
+  _importNativeJson(data, options = {}) {
+    const { clear = true } = options
+
+    if (clear) {
+      this.app.tree.clear()
+    }
+
+    let count = 0
+
+    // 如果根节点是 Leafer，遍历添加其子节点
+    if (data.tag === 'Leafer' && data.children) {
+      data.children.forEach((child) => {
+        this.app.tree.add(child)
+        count++
+      })
+    } else {
+      // 否则直接添加该节点
+      this.app.tree.add(data)
+      count = 1
+    }
+
+    if (count > 0) {
+      this.syncLayers()
+      if (this.recordState) {
+        this.recordState('import-json')
+      }
+    }
+
+    return count
+  },
+
+  /**
    * 从 Figma API 导入文件
-   * @param {string} urlOrKey - Figma 文件 URL 或 Key
-   * @param {string} token - Figma Personal Access Token
-   * @returns {Promise<number>} 导入的元素数量
    */
   async importFromFigmaAPI(urlOrKey, token) {
     if (!token) throw new Error('请提供 Figma Personal Access Token')
@@ -53,7 +127,10 @@ export const importMixin = {
     const treeHeight = this.app.tree.height || 600
 
     // 计算所有元素的包围盒，用于居中放置
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity
     elements.forEach((el) => {
       minX = Math.min(minX, el.x || 0)
       minY = Math.min(minY, el.y || 0)
@@ -63,8 +140,8 @@ export const importMixin = {
 
     const totalWidth = maxX - minX
     const totalHeight = maxY - minY
-    const offsetX = (treeWidth / 2 - totalWidth / 2) - minX
-    const offsetY = (treeHeight / 2 - totalHeight / 2) - minY
+    const offsetX = treeWidth / 2 - totalWidth / 2 - minX
+    const offsetY = treeHeight / 2 - totalHeight / 2 - minY
 
     elements.forEach((elData) => {
       const node = this._createNodeFromData({

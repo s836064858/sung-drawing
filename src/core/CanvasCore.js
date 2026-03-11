@@ -53,6 +53,17 @@ export class CanvasCore {
   }
 
   /**
+   * 导出指定图层为 JSON
+   */
+  exportLayerJson(layerId) {
+    const layer = this.findElementById(layerId)
+    if (layer) {
+      return layer.toJSON()
+    }
+    return null
+  }
+
+  /**
    * 导入 JSON 数据到画布
    */
   importJson(json) {
@@ -60,21 +71,24 @@ export class CanvasCore {
       this.app.tree.clear()
       return
     }
-    
+
     // 如果是 JSON 字符串，先解析
     const data = typeof json === 'string' ? JSON.parse(json) : json
-    
+
     // 清空当前画布
     this.app.tree.clear()
-    
+
     // 添加新内容
     // Leafer 的 add 方法支持直接添加 JSON 对象结构
-    if (data.children) {
-        data.children.forEach(child => {
-             this.app.tree.add(child)
-        })
+
+    // 如果根节点是 Leafer，遍历添加其子节点（这通常是整个画布导出）
+    if (data.tag === 'Leafer' && data.children) {
+      data.children.forEach((child) => {
+        this.app.tree.add(child)
+      })
     } else {
-         this.app.tree.add(data)
+      // 否则直接添加该节点（例如 Frame, Group 或单个 Shape）
+      this.app.tree.add(data)
     }
   }
 

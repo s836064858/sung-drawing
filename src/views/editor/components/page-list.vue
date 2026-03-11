@@ -41,7 +41,18 @@
     <div v-show="contextMenuVisible" class="context-menu" :style="{ top: contextMenuY + 'px', left: contextMenuX + 'px' }" @click.stop>
       <div class="menu-item" @click="handleRename">重命名</div>
       <div class="menu-item" @click="handleDuplicate">创建副本</div>
-      <div class="menu-item" @click="handleExportJson">导出 JSON</div>
+      <div class="menu-item-group">
+        <div class="menu-item">
+          <span>导出</span>
+          <i class="ri-arrow-right-s-line"></i>
+        </div>
+        <div class="submenu">
+          <div class="menu-item" @click="handleExport('json')">导出 JSON</div>
+          <div class="menu-item" @click="handleExport('figma')">导出 Figma JSON</div>
+          <div class="menu-item" @click="handleExport('png')">导出 PNG</div>
+          <div class="menu-item" @click="handleExport('jpg')">导出 JPEG</div>
+        </div>
+      </div>
       <div class="menu-divider"></div>
       <div class="menu-item delete" @click="handleDeleteFromMenu">删除</div>
     </div>
@@ -203,29 +214,96 @@ const handleDuplicate = () => {
   closeContextMenu()
 }
 
-const handleExportJson = () => {
+const handleExport = async (type) => {
   if (!contextMenuTargetPage.value) return
 
-  // 同样确保数据最新
+  // 保存当前页面数据，确保数据最新
   if (contextMenuTargetPage.value.id === activePageId.value) {
     saveCurrentPageData()
   }
 
-  const sourcePage = pages.value.find((p) => p.id === contextMenuTargetPage.value.id)
-  const jsonStr = JSON.stringify(sourcePage.json || {}, null, 2)
+  const page = pages.value.find((p) => p.id === contextMenuTargetPage.value.id)
+  if (!page) return
 
-  // 创建 Blob 并下载
-  const blob = new Blob([jsonStr], { type: 'application/json' })
+  const filename = page.name || 'page'
+
+  // JSON 导出
+  if (type === 'json') {
+    const jsonStr = JSON.stringify(page.json || {}, null, 2)
+    downloadFile(jsonStr, `${filename}.json`, 'application/json')
+    closeContextMenu()
+    return
+  }
+
+  // 其他格式需要使用 CanvasCore 处理
+  // 如果导出的是当前页，直接使用当前 core
+  // 如果是其他页，需要临时加载数据（比较复杂，这里简化处理：提示用户切换到该页导出，或者后台加载）
+  // 为了用户体验，我们这里只支持导出当前页的图片/Figma，非当前页自动切换过去再导出
+
+  if (page.id !== activePageId.value) {
+    ElMessage.info('正在切换到该页面进行导出...')
+    switchPage(page.id)
+    // 等待渲染
+    await nextTick()
+    // 给一点时间让画布渲染完成
+    setTimeout(() => {
+      exportCurrentPage(type, filename)
+    }, 100)
+  } else {
+    exportCurrentPage(type, filename)
+  }
+
+  closeContextMenu()
+}
+
+const exportCurrentPage = (type, filename) => {
+  const core = getCanvasCore && getCanvasCore()
+  if (!core) return
+
+  // 导出整页内容
+  // 这里我们需要一种方式导出整个画布内容，而不是选中元素
+  // 我们可以临时全选，或者扩展 exportSelection 支持传入元素列表
+
+  // 获取所有顶层元素
+  const allLayers = core.app.tree.children.filter((child) => !child.isInternal)
+
+  if (allLayers.length === 0) {
+    ElMessage.warning('页面为空，无法导出')
+    return
+  }
+
+  // 使用 core 的导出功能，但需要一点黑魔法来导出所有元素
+  // 我们可以临时模拟一个选中列表
+  const originalSelection = [...core.app.editor.list]
+
+  // 选中所有元素
+  core.app.editor.select(allLayers)
+
+  // 执行导出
+  core
+    .exportSelection(type, filename)
+    .then(() => {
+      // 恢复原来的选中状态
+      core.app.editor.select(originalSelection)
+      ElMessage.success('导出成功')
+    })
+    .catch((err) => {
+      console.error(err)
+      ElMessage.error('导出失败')
+      core.app.editor.select(originalSelection)
+    })
+}
+
+const downloadFile = (content, filename, type) => {
+  const blob = new Blob([content], { type })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `${sourcePage.name}.json`
+  a.download = filename
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
-
-  closeContextMenu()
 }
 
 const handleDeleteFromMenu = () => {
@@ -381,6 +459,27 @@ onUnmounted(() => {
   border-radius: 4px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   border: 1px solid #e4e7ed;
+  padding: 4px 0;
+  min-width: 120px;
+}
+
+.menu-item-group {
+  position: relative;
+}
+
+.menu-item-group:hover .submenu {
+  display: block;
+}
+
+.submenu {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   padding: 4px 0;
   min-width: 120px;
 }

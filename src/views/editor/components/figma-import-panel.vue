@@ -7,7 +7,7 @@
     </div>
 
     <div class="import-content">
-      <!-- 本地 .fig 文件 -->
+      <!-- 本地文件 -->
       <div v-show="mode === 'file'" class="import-section">
         <div
           class="drop-zone"
@@ -24,39 +24,22 @@
           </template>
           <template v-else>
             <i class="ri-upload-cloud-line drop-icon"></i>
-            <div class="drop-text">拖拽 .fig 文件到此处</div>
-            <div class="drop-hint">或点击选择文件</div>
+            <div class="drop-text">拖拽文件到此处</div>
+            <div class="drop-hint">支持 .json (原生/Figma) 和 .fig</div>
           </template>
         </div>
-        <input ref="fileInputRef" type="file" accept=".fig,.json" style="display: none" @change="handleFileInput" />
+        <input ref="fileInputRef" type="file" accept=".json,.fig" style="display: none" @change="handleFileInput" />
       </div>
 
       <!-- 粘贴 JSON -->
       <div v-show="mode === 'json'" class="import-section">
-        <textarea
-          v-model="jsonText"
-          class="json-input"
-          placeholder="粘贴 Figma 导出的 JSON 数据..."
-          :disabled="loading"
-        ></textarea>
+        <textarea v-model="jsonText" class="json-input" placeholder="粘贴 JSON 数据 (支持原生格式或 Figma 格式)..." :disabled="loading"></textarea>
       </div>
 
       <!-- Figma URL -->
       <div v-show="mode === 'url'" class="import-section">
-        <input
-          v-model="figmaUrl"
-          class="text-input"
-          placeholder="https://www.figma.com/design/XXXXX/..."
-          :disabled="loading"
-        />
-        <input
-          v-model="figmaToken"
-          class="text-input"
-          type="password"
-          placeholder="Personal Access Token"
-          :disabled="loading"
-          style="margin-top: 8px"
-        />
+        <input v-model="figmaUrl" class="text-input" placeholder="https://www.figma.com/design/XXXXX/..." :disabled="loading" />
+        <input v-model="figmaToken" class="text-input" type="password" placeholder="Personal Access Token" :disabled="loading" style="margin-top: 8px" />
         <div class="field-tip">在 Figma 设置 → Personal Access Tokens 中生成</div>
       </div>
     </div>
@@ -154,12 +137,17 @@ const handleImport = async () => {
   try {
     let count = 0
 
-    if (mode.value === 'file') {
-      count = canvasCore.importFromFigmaJSON(fileContent.value)
-    } else if (mode.value === 'json') {
-      count = canvasCore.importFromFigmaJSON(jsonText.value.trim())
+    if (mode.value === 'file' || mode.value === 'json') {
+      const content = mode.value === 'file' ? fileContent.value : JSON.parse(jsonText.value.trim())
+      count = await canvasCore.importData(content)
     } else if (mode.value === 'url') {
-      count = await canvasCore.importFromFigmaAPI(figmaUrl.value.trim(), figmaToken.value.trim())
+      count = await canvasCore.importData(
+        {
+          url: figmaUrl.value.trim(),
+          token: figmaToken.value.trim()
+        },
+        'figma-api'
+      )
     }
 
     if (count > 0) {
@@ -372,8 +360,12 @@ const handleImport = async () => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spinning {
