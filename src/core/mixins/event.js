@@ -706,6 +706,20 @@ export const eventMixin = {
       return
     }
 
+    // 编组: Cmd/Ctrl + G
+    if (isMod && !e.shiftKey && (e.key === 'g' || e.key === 'G')) {
+      e.preventDefault()
+      this.groupSelected()
+      return
+    }
+
+    // 解组: Cmd/Ctrl + Shift + G
+    if (isMod && e.shiftKey && (e.key === 'g' || e.key === 'G')) {
+      e.preventDefault()
+      this.ungroupSelected()
+      return
+    }
+
     // 快速复制: Cmd/Ctrl + D
     if (isMod && e.key === 'd') {
       e.preventDefault()

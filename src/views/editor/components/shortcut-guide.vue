@@ -91,6 +91,8 @@ const commonShortcuts = computed(() => [
   { keys: [shiftKey.value, modKey.value, 'Z'], label: '重做' },
   { keys: [modKey.value, 'C'], label: '复制' },
   { keys: [modKey.value, 'D'], label: '快速复制' },
+  { keys: [modKey.value, 'G'], label: '编组' },
+  { keys: [shiftKey.value, modKey.value, 'G'], label: '解组' },
   { keys: [modKey.value, 'A'], label: '全选' },
   { keys: [modKey.value, '+'], label: '放大' },
   { keys: [modKey.value, '-'], label: '缩小' },

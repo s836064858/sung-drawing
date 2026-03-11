@@ -58,6 +58,14 @@
           <span>复制图层</span>
           <span class="shortcut">⌘D</span>
         </div>
+        <div class="menu-item" @click="handleMenuAction('group')">
+          <span>编组</span>
+          <span class="shortcut">⌘G</span>
+        </div>
+        <div class="menu-item" @click="handleMenuAction('ungroup')">
+          <span>解组</span>
+          <span class="shortcut">⇧⌘G</span>
+        </div>
         <div class="menu-item" @click="handleMenuAction('rename')">重命名</div>
         <div class="menu-item" @click="handleMenuAction('toggleLock')">
           {{ contextMenuTarget?.locked ? '解锁' : '加锁' }}
@@ -97,6 +105,14 @@ const handleContextMenu = (e, layer) => {
   // 简单的边界处理，防止菜单溢出屏幕（可选优化）
   contextMenuPosition.value = { x: e.clientX, y: e.clientY }
   contextMenuTarget.value = layer
+
+  // 如果右键点击的图层不在当前选中列表中，则选中该图层
+  if (!selectedLayerIds.value.includes(layer.id)) {
+    const core = getCore()
+    if (core) {
+      core.selectLayer(layer.id)
+    }
+  }
 }
 
 const handleMenuAction = (action) => {
@@ -120,6 +136,12 @@ const handleMenuAction = (action) => {
       break
     case 'duplicate':
       core.duplicateLayer(id)
+      break
+    case 'group':
+      core.groupSelected()
+      break
+    case 'ungroup':
+      core.ungroupSelected()
       break
     case 'rename':
       renamingLayerId.value = id
