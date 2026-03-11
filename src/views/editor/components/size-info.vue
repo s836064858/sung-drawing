@@ -155,7 +155,7 @@ onUnmounted(() => {
 .size-info {
   position: fixed;
   transform: translateX(-50%);
-  z-index: 9999;
+  z-index: 9998; /* 低于右键菜单 (9999) */
   background-color: rgba(0, 0, 0, 0.75);
   color: #fff;
   padding: 6px 12px;
