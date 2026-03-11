@@ -156,47 +156,55 @@ export const toolMixin = {
   },
 
   /**
-   * 计算适配视口的尺寸和位置
-   * @param {number} origWidth 原始宽度
-   * @param {number} origHeight 原始高度
-   * @param {object} options 可选的 { x, y } 指定位置
-   * @returns {{ x, y, width, height }}
+   * 计算图片在视口中的适应尺寸和位置
    */
-  fitToViewport(origWidth, origHeight, options = {}) {
-    const tree = this.app.tree
-    const { width: appWidth, height: appHeight } = this.app
-    const scaleX = tree.scaleX || 1
-    const scaleY = tree.scaleY || 1
-
-    const viewport = {
-      x: -tree.x / scaleX,
-      y: -tree.y / scaleY,
-      width: appWidth / scaleX,
-      height: appHeight / scaleY
+  fitToViewport(width, height, options = {}) {
+    // 获取视口中心坐标（世界坐标）
+    const viewport = this.app.tree
+    // 注意：Leafer 的视口中心获取可能需要根据版本调整，这里使用简单的计算
+    // 假设视口中心就是当前可见区域的中心
+    
+    // 获取当前视口变换
+    const { x: viewX, y: viewY, scaleX } = viewport
+    
+    // 视口宽高（屏幕像素）
+    const screenWidth = this.app.width
+    const screenHeight = this.app.height
+    
+    // 目标显示尺寸：图片原始尺寸或限制最大为视口的 80%
+    let targetWidth = width
+    let targetHeight = height
+    
+    // 限制最大尺寸
+    const maxScreenW = screenWidth * 0.8
+    const maxScreenH = screenHeight * 0.8
+    
+    // 当前缩放下的图片屏幕尺寸
+    let screenImgW = width * scaleX
+    let screenImgH = height * scaleX
+    
+    if (screenImgW > maxScreenW || screenImgH > maxScreenH) {
+        const ratio = Math.min(maxScreenW / screenImgW, maxScreenH / screenImgH)
+        targetWidth = width * ratio
+        targetHeight = height * ratio
     }
-
-    let width = origWidth
-    let height = origHeight
-
-    // 尺寸适配：大于视口 80% 时等比缩放
-    const maxW = viewport.width * 0.8
-    const maxH = viewport.height * 0.8
-
-    if (width > maxW || height > maxH) {
-      const ratio = Math.min(maxW / width, maxH / height)
-      width *= ratio
-      height *= ratio
-    }
-
-    // 位置适配
-    const x = options.x ?? viewport.x + (viewport.width - width) / 2
-    const y = options.y ?? viewport.y + (viewport.height - height) / 2
-
-    return { x, y, width, height }
+    
+    // 计算中心位置（世界坐标）
+    // 屏幕中心 -> 世界坐标
+    // worldX = (screenX - viewX) / scale
+    const centerX = (screenWidth / 2 - viewX) / scaleX
+    const centerY = (screenHeight / 2 - viewY) / scaleX
+    
+    const x = options.x !== undefined ? options.x : centerX - targetWidth / 2
+    const y = options.y !== undefined ? options.y : centerY - targetHeight / 2
+    
+    return { x, y, width: targetWidth, height: targetHeight }
   },
 
   /**
    * 添加图片
+   * @param {string} url 图片地址
+   * @param {object} options 选项 { x, y, width, height }
    */
   addImage(url, options = {}) {
     this.resetPasteOffset()
@@ -205,7 +213,23 @@ export const toolMixin = {
     img.src = url
 
     img.onload = () => {
-      const { x, y, width, height } = this.fitToViewport(img.width, img.height, options)
+      // 如果 options 中提供了坐标和尺寸，直接使用
+      let x, y, width, height
+
+      if (options.x !== undefined && options.y !== undefined) {
+        // 如果只提供了坐标，尺寸保持原始或自适应
+        width = options.width || img.width
+        height = options.height || img.height
+        x = options.x
+        y = options.y
+      } else {
+        // 否则使用默认的视口适应逻辑
+        const fit = this.fitToViewport(img.width, img.height, options)
+        x = fit.x
+        y = fit.y
+        width = fit.width
+        height = fit.height
+      }
 
       const image = new Image({
         url,
