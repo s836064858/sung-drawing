@@ -58,7 +58,10 @@ npm run build
 
 - **树形结构**：清晰展示 Frame、Group 及各类图形的层级关系。
 - **拖拽排序**：支持图层上下拖拽调整层级。
-- **成组/解组**：支持多选元素进行成组（Frame）操作。
+- **成组/解组**：
+  - **编组**：`Ctrl + G` / `Cmd + G`
+  - **解组**：`Ctrl + Shift + G` / `Cmd + Shift + G`
+- **右键菜单**：画布和图层面板均支持右键菜单，提供复制、删除、编组、层级调整等快捷操作。
 - **状态控制**：一键锁定/解锁、显示/隐藏图层。
 
 ### ⚙️ 属性编辑
@@ -78,6 +81,9 @@ npm run build
 | 恢复     | `Ctrl + Shift + Z` / `Ctrl + Y` | `Cmd + Shift + Z` / `Cmd + Y` |
 | 复制     | `Ctrl + C`                      | `Cmd + C`                     |
 | 粘贴     | `Ctrl + V`                      | `Cmd + V`                     |
+| 快速复制 | `Ctrl + D`                      | `Cmd + D`                     |
+| 编组     | `Ctrl + G`                      | `Cmd + G`                     |
+| 解组     | `Ctrl + Shift + G`              | `Cmd + Shift + G`             |
 | 删除     | `Delete` / `Backspace`          | `Delete` / `Backspace`        |
 | 全选     | `Ctrl + A`                      | `Cmd + A`                     |
 | 保存     | `Ctrl + S`                      | `Cmd + S`                     |
