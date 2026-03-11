@@ -1,10 +1,6 @@
 import { Rect } from 'leafer-ui'
 import { isContainerTag } from '../constants/element-types'
-import {
-  serializeElement,
-  deserializeElement,
-  getElementTypeMap
-} from '../utils/element-serializer'
+import { serializeElement, deserializeElement, getElementTypeMap } from '../utils/element-serializer'
 
 // 复制粘贴配置
 const PASTE_OFFSET_STEP = 20
@@ -39,10 +35,10 @@ export const layerMixin = {
 
       // 深拷贝属性
       const node = new ClassName(JSON.parse(JSON.stringify(props)))
-      
+
       // 默认开启交互，除非明确设置为 false
       if (props.editable !== false) {
-        node.editable = true 
+        node.editable = true
       }
 
       if (children && Array.isArray(children)) {
@@ -244,8 +240,16 @@ export const layerMixin = {
 
     // 复制列表，因为 remove 会改变原列表
     const list = [...selected]
-    list.forEach((item) => item.remove())
+
+    // 取消选择，清除高亮框 (关键修复：先取消选择，再删除)
     this.app.editor.cancel()
+
+    // 清除自定义高亮框
+    if (this.highlightShape && this.highlightShape.visible) {
+      this.highlightShape.visible = false
+    }
+
+    list.forEach((item) => item.remove())
     this.resetPasteOffset()
   },
 
@@ -272,6 +276,20 @@ export const layerMixin = {
     const element = this.findElementById(id)
     if (element) {
       element.visible = !element.visible
+
+      // 如果隐藏了选中元素，取消其选中状态，否则高亮框会留在原地
+      if (!element.visible) {
+        const isSelected = this.app.editor.list.some((item) => item.innerId === id)
+        if (isSelected) {
+          const remainingSelection = this.app.editor.list.filter((item) => item.innerId !== id)
+          if (remainingSelection.length === 0) {
+            this.app.editor.cancel()
+          } else {
+            this.app.editor.select(remainingSelection)
+          }
+        }
+      }
+
       if (this.recordState) this.recordState('toggle-visible')
     }
   },
@@ -293,7 +311,32 @@ export const layerMixin = {
   removeLayer(id) {
     const element = this.findElementById(id)
     if (element) {
+      // 检查被删除的元素是否是当前选中的元素（或选中元素的一部分）
+      const isSelected = this.app.editor.list.some((item) => item.innerId === id)
+
       element.remove()
+
+      // 清除高亮框（如果有）
+      if (this.highlightShape && this.highlightShape.visible) {
+        this.highlightShape.visible = false
+      }
+
+      // 如果删除了选中元素，取消选择以清除高亮框
+      if (isSelected) {
+        // 如果只是多选中的一个被删除，重新计算选中列表会更复杂，
+        // 但简单起见，如果删除了选中的元素，我们尝试更新选中状态
+        // Leafer Editor 应该会自动处理，但如果有残留，手动取消一下更稳妥
+
+        // 过滤掉已被移除的元素
+        const remainingSelection = this.app.editor.list.filter((item) => item.parent)
+
+        if (remainingSelection.length === 0) {
+          this.app.editor.cancel()
+        } else {
+          this.app.editor.select(remainingSelection)
+        }
+      }
+
       if (this.recordState) this.recordState('remove-layer')
     }
   },
@@ -576,5 +619,5 @@ export const layerMixin = {
       // 忽略错误，某些浏览器可能不支持
       console.warn('无法清除系统剪贴板:', err)
     }
-  },
+  }
 }
