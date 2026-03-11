@@ -4,6 +4,13 @@
       <i class="ri-stack-line icon"></i>
       <h3>图层</h3>
     </div>
+    
+    <!-- 多选提示 -->
+    <div v-if="selectedLayerIds.length > 1" class="multi-select-hint">
+      <i class="ri-checkbox-multiple-line"></i>
+      <span>已选中 {{ selectedLayerIds.length }} 个图层</span>
+    </div>
+    
     <div class="panel-content custom-scrollbar" @dragover.prevent @drop="onPanelDrop">
       <div v-if="layers.length > 0" class="layer-list">
         <LayerItem
@@ -290,10 +297,23 @@ const clearDragState = () => {
   dropPosition.value = null
 }
 
-const handleSelect = (layer) => {
+const handleSelect = (layer, event) => {
   const core = getCore()
   if (core) {
-    core.selectLayer(layer.id)
+    // 多选逻辑
+    const isMod = event?.metaKey || event?.ctrlKey // Cmd/Ctrl 多选
+    const isShift = event?.shiftKey // Shift 范围选择
+    
+    if (isMod) {
+      // Cmd/Ctrl 点击：切换选中状态
+      core.toggleLayerSelection(layer.id)
+    } else if (isShift) {
+      // Shift 点击：范围选择
+      core.selectLayerRange(layer.id)
+    } else {
+      // 普通点击：单选
+      core.selectLayer(layer.id)
+    }
   }
 }
 
@@ -369,6 +389,34 @@ const handleHoverEnd = (layer) => {
   flex: 1;
   overflow-y: overlay;
   padding: 4px 0;
+}
+
+.multi-select-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: #f0f9ff;
+  border-bottom: 1px solid #e0f2fe;
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 500;
+  animation: slideDown 0.2s ease-out;
+}
+
+.multi-select-hint i {
+  font-size: 14px;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .layer-list {

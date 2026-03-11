@@ -199,6 +199,9 @@ onMounted(() => {
       },
       onLayerUnhover: (layerId) => {
         store.commit('setHoveredLayerId', null)
+      },
+      getLayers: () => {
+        return store.state.layers
       }
     })
 

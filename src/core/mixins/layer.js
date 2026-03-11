@@ -270,6 +270,100 @@ export const layerMixin = {
   },
 
   /**
+   * 切换图层选中状态（多选）
+   */
+  toggleLayerSelection(id) {
+    const element = this.findElementById(id)
+    if (!element) return
+
+    const currentSelection = this.app.editor.list
+    const isSelected = currentSelection.some((item) => item.innerId === id)
+
+    if (isSelected) {
+      // 取消选中该图层
+      const newSelection = currentSelection.filter((item) => item.innerId !== id)
+      if (newSelection.length === 0) {
+        this.app.editor.cancel()
+      } else {
+        this.app.editor.select(newSelection)
+      }
+    } else {
+      // 添加到选中列表
+      this.app.editor.select([...currentSelection, element])
+    }
+
+    this.syncSelection()
+    this.resetPasteOffset()
+  },
+
+  /**
+   * 范围选择图层（Shift 点击）
+   */
+  selectLayerRange(targetId) {
+    const currentSelection = this.app.editor.list
+    
+    // 如果没有选中任何图层，直接选中目标图层
+    if (currentSelection.length === 0) {
+      this.selectLayer(targetId)
+      return
+    }
+
+    // 获取最后一个选中的图层
+    const lastSelectedId = currentSelection[currentSelection.length - 1].innerId
+    
+    // 获取所有图层的扁平列表（包括嵌套图层）
+    const flatLayers = this.getFlatLayerList()
+    
+    // 找到起始和结束索引
+    const startIndex = flatLayers.findIndex((l) => String(l.id) === String(lastSelectedId))
+    const endIndex = flatLayers.findIndex((l) => String(l.id) === String(targetId))
+    
+    if (startIndex === -1 || endIndex === -1) {
+      this.selectLayer(targetId)
+      return
+    }
+
+    // 确定范围
+    const minIndex = Math.min(startIndex, endIndex)
+    const maxIndex = Math.max(startIndex, endIndex)
+    
+    // 选中范围内的所有图层
+    const rangeLayerIds = flatLayers.slice(minIndex, maxIndex + 1).map((l) => l.id)
+    const elementsToSelect = rangeLayerIds
+      .map((id) => this.findElementById(id))
+      .filter((el) => el && !el.locked && el.visible)
+    
+    if (elementsToSelect.length > 0) {
+      this.app.editor.select(elementsToSelect)
+    }
+
+    this.syncSelection()
+    this.resetPasteOffset()
+  },
+
+  /**
+   * 获取扁平化的图层列表（用于范围选择）
+   */
+  getFlatLayerList() {
+    const result = []
+    
+    const flatten = (layers) => {
+      layers.forEach((layer) => {
+        result.push(layer)
+        if (layer.children && layer.children.length > 0) {
+          flatten(layer.children)
+        }
+      })
+    }
+    
+    // 从 Store 获取图层列表（已经是倒序的）
+    const layers = this.callbacks.getLayers ? this.callbacks.getLayers() : []
+    flatten(layers)
+    
+    return result
+  },
+
+  /**
    * 切换图层可见性
    */
   toggleVisible(id) {

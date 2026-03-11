@@ -12,7 +12,7 @@
       }"
       :style="{ paddingLeft: `${depth * 16 + 12}px` }"
       draggable="true"
-      @click="$emit('select', layer)"
+      @click="$emit('select', layer, $event)"
       @dragstart="$emit('drag-start', $event, layer)"
       @dragover.prevent="$emit('drag-over', $event, layer)"
       @dragleave="$emit('drag-leave', $event)"
@@ -79,7 +79,7 @@
         :drop-position="dropPosition"
         :hovered-id="hoveredId"
         :renaming-id="renamingId"
-        @select="$emit('select', $event)"
+        @select="(layer, event) => $emit('select', layer, event)"
         @toggle-visible="$emit('toggle-visible', $event)"
         @toggle-lock="$emit('toggle-lock', $event)"
         @remove="$emit('remove', $event)"
@@ -229,6 +229,18 @@ const toggleExpand = () => {
 .layer-item.active {
   background-color: var(--primary-color-light);
   color: var(--primary-color);
+  font-weight: 500;
+}
+
+.layer-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--primary-color);
+  border-radius: 0 2px 2px 0;
 }
 
 .layer-item.hovered {
