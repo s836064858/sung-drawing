@@ -192,6 +192,7 @@ const updatePosition = () => {
 
 const activateFunction = (key) => {
   activeFunction.value = key
+  prompt.value = null
   if (['generate-image', 'ai-polish'].includes(key)) {
     // 如果是 AI 生图且选中了文本元素，自动填充文本内容
     if (key === 'generate-image') {

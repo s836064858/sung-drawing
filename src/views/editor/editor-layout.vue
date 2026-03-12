@@ -84,17 +84,17 @@
 
 <script setup>
 import { ref, provide, onMounted } from 'vue'
-import PageList from './components/page-list.vue'
-import LayerPanel from './components/layer-panel.vue'
-import ResourcePanel from './components/resource-panel.vue'
-import CanvasArea from './components/canvas-area.vue'
-import PropertyPanel from './components/property-panel.vue'
-import ToolbarPanel from './components/toolbar-panel.vue'
-import SizeInfo from './components/size-info.vue'
-import AiToolbar from './components/ai-toolbar.vue'
-import FigmaImportPanel from './components/figma-import-panel.vue'
-import SettingsPanel from './components/settings-panel.vue'
-import ShortcutGuide from './components/shortcut-guide.vue'
+import PageList from './components/panels/left/page-list.vue'
+import LayerPanel from './components/panels/left/layer-panel.vue'
+import ResourcePanel from './components/panels/left/resource-panel.vue'
+import FigmaImportPanel from './components/panels/left/figma-import-panel.vue'
+import CanvasArea from './components/canvas/canvas-area.vue'
+import SizeInfo from './components/canvas/size-info.vue'
+import PropertyPanel from './components/panels/right/property-panel.vue'
+import ToolbarPanel from './components/toolbar/toolbar-panel.vue'
+import AiToolbar from './components/toolbar/ai-toolbar.vue'
+import SettingsPanel from './components/modals/settings-panel.vue'
+import ShortcutGuide from './components/modals/shortcut-guide.vue'
 import logoUrl from '@/assets/image/logo.png'
 
 const canvasAreaRef = ref(null)
