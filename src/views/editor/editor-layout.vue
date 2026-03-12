@@ -37,12 +37,22 @@
         <div class="panel-body" v-show="activeTab === 'import'">
           <figma-import-panel />
         </div>
+
+        <!-- 底部设置按钮 -->
+        <div class="bottom-settings">
+          <div class="setting-item" @click="openSettings">
+            <i class="ri-settings-3-line"></i>
+            <span>设置</span>
+          </div>
+        </div>
       </div>
 
       <div class="copyright-info">
         <span>© 2026 Sung Drawing by 荛子</span>
       </div>
     </el-aside>
+
+    <settings-panel ref="settingsPanelRef" />
 
     <div class="collapsed-brand" v-show="isCollapsed" @click="toggleCollapse">
       <img :src="logoUrl" alt="Logo" class="mini-logo" />
@@ -55,6 +65,7 @@
         <toolbar-panel :active-tool="activeTool" :can-undo="canUndo" :can-redo="canRedo" @tool-change="handleToolChange" />
       </div>
       <size-info />
+      <ai-toolbar />
       <shortcut-guide />
     </el-main>
 
@@ -80,11 +91,14 @@ import CanvasArea from './components/canvas-area.vue'
 import PropertyPanel from './components/property-panel.vue'
 import ToolbarPanel from './components/toolbar-panel.vue'
 import SizeInfo from './components/size-info.vue'
+import AiToolbar from './components/ai-toolbar.vue'
 import FigmaImportPanel from './components/figma-import-panel.vue'
+import SettingsPanel from './components/settings-panel.vue'
 import ShortcutGuide from './components/shortcut-guide.vue'
 import logoUrl from '@/assets/image/logo.png'
 
 const canvasAreaRef = ref(null)
+const settingsPanelRef = ref(null)
 const activeTool = ref('select')
 const canUndo = ref(false)
 const canRedo = ref(false)
@@ -94,6 +108,10 @@ const activeTab = ref('layers') // 'layers' | 'resources' | 'import'
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
+}
+
+const openSettings = () => {
+  settingsPanelRef.value?.open()
 }
 
 const toggleRightCollapse = () => {
@@ -146,13 +164,42 @@ const handleToolChange = (event) => {
 </script>
 
 <style scoped>
-/* 左侧面板布局优化 */
 .left-panel-content {
   flex: 1;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
+}
+
+.bottom-settings {
+  padding: 4px 8px;
+  /* border-top: 1px solid var(--border-color); */
+  background-color: transparent;
+  margin-top: auto;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #909399;
+  font-size: 12px;
+  transition: all 0.2s;
+  width: fit-content;
+  margin: 0 auto 8px;
+}
+
+.setting-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: #606266;
+}
+
+.setting-item i {
+  font-size: 14px;
 }
 
 .panel-tabs {

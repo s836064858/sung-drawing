@@ -1,4 +1,4 @@
-import { App } from 'leafer-ui'
+import { App, Platform } from 'leafer-ui'
 import '@leafer-in/editor'
 import '@leafer-in/text-editor'
 import '@leafer-in/find'
@@ -26,6 +26,12 @@ export const initMixin = {
         type: 'design'
       }
     })
+
+    // 默认配置，未经服务端允许的跨域图片不能渲染。
+    Platform.image.crossOrigin = 'anonymous'
+
+    // 允许跨域图片渲染，但不支持导出画板内容（浏览器的限制）。
+    Platform.image.crossOrigin = null
 
     // 初始化插件
     this.initPlugins()
