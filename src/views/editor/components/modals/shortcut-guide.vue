@@ -20,39 +20,44 @@
       </div>
 
       <div class="panel-content">
-        <div class="shortcut-group">
-          <div class="group-title">通用</div>
-          <div class="shortcut-list">
-            <div class="shortcut-item" v-for="item in commonShortcuts" :key="item.keys">
-              <span class="label">{{ item.label }}</span>
-              <div class="keys-area">
-                <div class="keys-wrapper">
-                  <span class="key" v-for="(key, index) in item.keys" :key="index">{{ key }}</span>
+        <div class="panel-controls">
+          <div class="search-box">
+            <i class="ri-search-line"></i>
+            <input v-model.trim="searchKeyword" type="text" placeholder="搜索快捷键" />
+          </div>
+          <div class="category-tabs">
+            <button class="tab-btn" :class="{ active: activeCategory === 'all' }" @click="activeCategory = 'all'">全部</button>
+            <button class="tab-btn" :class="{ active: activeCategory === 'common' }" @click="activeCategory = 'common'">
+              通用 {{ commonShortcuts.length }}
+            </button>
+            <button class="tab-btn" :class="{ active: activeCategory === 'tool' }" @click="activeCategory = 'tool'">工具 {{ toolShortcuts.length }}</button>
+          </div>
+        </div>
+
+        <div class="group-list" v-if="filteredShortcutGroups.length > 0">
+          <div class="shortcut-group-card" v-for="group in filteredShortcutGroups" :key="group.key">
+            <div class="group-header" @click="toggleGroup(group.key)">
+              <div class="group-title-row">
+                <span class="group-title">{{ group.title }}</span>
+                <span class="group-count">{{ group.items.length }}</span>
+              </div>
+              <i class="ri-arrow-down-s-line group-arrow" :class="{ collapsed: collapsedGroups[group.key] }"></i>
+            </div>
+            <div class="shortcut-list" v-show="!collapsedGroups[group.key]">
+              <div class="shortcut-item" v-for="item in group.items" :key="`${group.key}-${item.label}`">
+                <span class="label">{{ item.label }}</span>
+                <div class="keys-area">
+                  <div class="keys-wrapper">
+                    <span class="key" v-for="(key, index) in item.keys" :key="index">{{ key }}</span>
+                  </div>
+                  <span class="key-hint" v-if="item.hint">{{ item.hint }}</span>
                 </div>
-                <span class="key-hint" v-if="item.hint">{{ item.hint }}</span>
               </div>
             </div>
           </div>
         </div>
-
-        <div class="divider"></div>
-
-        <div class="shortcut-group">
-          <div class="group-title">工具</div>
-          <div class="shortcut-list">
-            <div class="shortcut-item" v-for="item in toolShortcuts" :key="item.keys">
-              <span class="label">{{ item.label }}</span>
-              <div class="keys-area">
-                <div class="keys-wrapper">
-                  <span class="key" v-for="(key, index) in item.keys" :key="index">{{ key }}</span>
-                </div>
-                <span class="key-hint" v-if="item.hint">{{ item.hint }}</span>
-              </div>
-            </div>
-            <div class="empty-item" v-if="toolShortcuts.length === 0">
-              <span class="label">暂无工具快捷键</span>
-            </div>
-          </div>
+        <div class="empty-item" v-else>
+          <span class="label">未找到匹配的快捷键</span>
         </div>
       </div>
     </div>
@@ -60,11 +65,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
 
 const isCollapsed = ref(true)
 const isMac = ref(true)
 const guideRef = ref(null)
+const searchKeyword = ref('')
+const activeCategory = ref('all')
+const collapsedGroups = reactive({
+  common: false,
+  tool: false
+})
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
@@ -109,7 +120,41 @@ const commonShortcuts = computed(() => [
   { keys: [shiftKey.value, '↑', '↓', '←', '→'], label: '微调位移（10px）', hint: 'shift + 方向键' }
 ])
 
-const toolShortcuts = []
+const toolShortcuts = computed(() => [
+  { keys: ['V'], label: '选择模式' },
+  { keys: ['H'], label: '移动模式' },
+  { keys: ['P'], label: '钢笔工具' },
+  { keys: ['R'], label: '矩形工具' },
+  { keys: ['O'], label: '圆形工具' },
+  { keys: ['D'], label: '菱形工具' },
+  { keys: ['L'], label: '直线工具' },
+  { keys: ['A'], label: '箭头工具' },
+  { keys: ['F'], label: 'Frame 工具' },
+  { keys: ['T'], label: '文字工具' }
+])
+
+const allShortcutGroups = computed(() => [
+  { key: 'common', title: '通用', items: commonShortcuts.value },
+  { key: 'tool', title: '工具', items: toolShortcuts.value }
+])
+
+const filteredShortcutGroups = computed(() => {
+  const keyword = searchKeyword.value.toLowerCase()
+  const groups = allShortcutGroups.value.filter((group) => activeCategory.value === 'all' || group.key === activeCategory.value)
+
+  if (!keyword) return groups
+
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => `${item.label} ${item.keys.join(' ')} ${item.hint || ''}`.toLowerCase().includes(keyword))
+    }))
+    .filter((group) => group.items.length > 0)
+})
+
+const toggleGroup = (groupKey) => {
+  collapsedGroups[groupKey] = !collapsedGroups[groupKey]
+}
 </script>
 
 <style scoped>
@@ -148,7 +193,7 @@ const toolShortcuts = []
 
 /* 展开状态 - 面板 */
 .shortcut-panel {
-  width: 260px;
+  width: 320px;
   background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 12px;
@@ -207,8 +252,8 @@ const toolShortcuts = []
 }
 
 .panel-content {
-  padding: 12px 0;
-  max-height: 400px;
+  padding: 12px;
+  max-height: 460px;
   overflow-y: auto;
 }
 
@@ -221,21 +266,108 @@ const toolShortcuts = []
   border-radius: 2px;
 }
 
-.shortcut-group {
-  padding: 0 16px;
+.panel-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.search-box {
+  height: 32px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 8px;
+  color: #909399;
+  background-color: #fff;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 12px;
+  color: #606266;
+}
+
+.category-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tab-btn {
+  border: 1px solid #e4e7ed;
+  background-color: #fff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #606266;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  background-color: var(--primary-color-light);
+}
+
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-group-card {
+  border: 1px solid #ebeef5;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  cursor: pointer;
+  background-color: #f8fafc;
+}
+
+.group-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .group-title {
   font-size: 12px;
+  color: #606266;
+  font-weight: 600;
+}
+
+.group-count {
+  font-size: 11px;
   color: #909399;
-  margin-bottom: 8px;
-  font-weight: 500;
+}
+
+.group-arrow {
+  color: #909399;
+  transition: transform 0.2s;
+}
+
+.group-arrow.collapsed {
+  transform: rotate(-90deg);
 }
 
 .shortcut-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  padding: 8px 10px;
 }
 
 .shortcut-item {
@@ -290,12 +422,6 @@ const toolShortcuts = []
   min-width: 20px;
   text-align: center;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
-}
-
-.divider {
-  height: 1px;
-  background-color: rgba(0, 0, 0, 0.05);
-  margin: 12px 0;
 }
 
 .empty-item {

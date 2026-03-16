@@ -699,6 +699,12 @@ export const eventMixin = {
 
     const isMod = e.metaKey || e.ctrlKey
 
+    if (e.key === 'Escape' && this.mode !== 'select') {
+      e.preventDefault()
+      this.setMode('select')
+      return
+    }
+
     // 复制: Cmd/Ctrl + C
     if (isMod && e.key === 'c') {
       e.preventDefault()
@@ -779,6 +785,27 @@ export const eventMixin = {
       // 或者使用 fit view
       // this.app.tree.zoom('fit')
       return
+    }
+
+    if (!isMod && !e.altKey) {
+      const toolModeMap = {
+        v: 'select',
+        h: 'move',
+        p: 'pen',
+        r: 'rect',
+        o: 'ellipse',
+        d: 'diamond',
+        l: 'line',
+        a: 'arrow',
+        f: 'frame',
+        t: 'text'
+      }
+      const targetMode = toolModeMap[e.key.toLowerCase()]
+      if (targetMode) {
+        e.preventDefault()
+        this.setMode(targetMode)
+        return
+      }
     }
 
     // 删除: Backspace 或 Delete
