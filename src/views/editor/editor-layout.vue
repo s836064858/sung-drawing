@@ -131,6 +131,12 @@ const modeToastText = ref('')
 const tourVisible = ref(false)
 const tourSteps = [
   {
+    target: '.app-brand',
+    title: '欢迎使用 Sung Drawing',
+    description: '接下来将用 30 秒带你快速了解核心区域与常用功能。',
+    placement: 'right'
+  },
+  {
     target: '.panel-tabs',
     title: '工作区切换',
     description: '在图层、资源、导入之间切换，管理内容与素材。',
