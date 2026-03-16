@@ -146,19 +146,20 @@
           <div class="section-title">排版</div>
           <div class="property-grid">
             <!-- Font Family -->
-            <div class="property-input-wrapper" style="grid-column: span 2">
+            <div class="property-input-wrapper font-select-wrapper" style="grid-column: span 2">
               <el-select
                 v-model="formData.fontFamily"
                 size="small"
                 class="figma-select"
                 placeholder="字体"
-                :loading="isLoadingFont"
-                :disabled="formData.locked"
-                loading-text="加载字体中..."
+                :disabled="formData.locked || isLoadingFont"
                 @change="(val) => updateProperty('fontFamily', val)"
               >
                 <el-option v-for="font in fontFamilies" :key="font.value" :label="font.label" :value="font.value" />
               </el-select>
+              <div v-if="isLoadingFont" class="font-select-loading-indicator" aria-hidden="true">
+                <i class="ri-loader-4-line"></i>
+              </div>
             </div>
 
             <!-- Weight & Size -->
@@ -696,6 +697,11 @@ const fontFamilies = [
     label: '阿里巴巴普惠体 (远程)',
     value: 'Alibaba PuHuiTi',
     url: 'https://figma-mj.oss-cn-hangzhou.aliyuncs.com/font/AlibabaPuHuiTi-3-55-RegularL3.woff2'
+  },
+  {
+    url: 'https://figma-mj.oss-cn-hangzhou.aliyuncs.com/font/AlimamaDaoLiTi.woff2',
+    label: '阿里妈妈刀隶体',
+    value: 'AlimamaDaoLiTi'
   }
 ]
 
@@ -1021,12 +1027,72 @@ const getFillTypeText = (fill) => {
   return '纯色'
 }
 
-// 加载远程字体
+const readSfntTag = (view, offset) => {
+  return String.fromCharCode(view.getUint8(offset), view.getUint8(offset + 1), view.getUint8(offset + 2), view.getUint8(offset + 3))
+}
+
+const validateFontBuffer = (buffer) => {
+  if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 12) {
+    const error = new Error('字体文件为空或文件头无效')
+    error.code = 'INVALID_FONT_BINARY'
+    throw error
+  }
+
+  const view = new DataView(buffer)
+  const sfntVersion = view.getUint32(0, false)
+  const isWoff = sfntVersion === 0x774f4646
+  const isWoff2 = sfntVersion === 0x774f4632
+  const isOpenType = sfntVersion === 0x4f54544f
+  const isTrueType = sfntVersion === 0x00010000
+
+  if (isWoff || isWoff2) {
+    return
+  }
+
+  if (!isOpenType && !isTrueType) {
+    const error = new Error('字体文件格式不受支持')
+    error.code = 'UNSUPPORTED_FONT_FORMAT'
+    throw error
+  }
+
+  const numTables = view.getUint16(4, false)
+  for (let index = 0; index < numTables; index += 1) {
+    const entryOffset = 12 + index * 16
+    if (entryOffset + 16 > view.byteLength) break
+    const tag = readSfntTag(view, entryOffset)
+    if (tag !== 'vhea') continue
+    const tableOffset = view.getUint32(entryOffset + 8, false)
+    if (tableOffset + 4 > view.byteLength) break
+    const vheaVersion = view.getUint32(tableOffset, false)
+    if (vheaVersion !== 0x00010000) {
+      const error = new Error(`vhea table version ${vheaVersion.toString(16)} is invalid for webfont`)
+      error.code = 'UNSUPPORTED_VHEA_VERSION'
+      throw error
+    }
+    break
+  }
+}
+
 const loadRemoteFont = async (fontName, fontUrl) => {
   if (loadedFonts.has(fontName)) return true
 
   try {
-    const fontFace = new FontFace(fontName, `url(${fontUrl})`, {
+    const response = await fetch(fontUrl, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit'
+    })
+
+    if (!response.ok) {
+      const error = new Error(`HTTP ${response.status}`)
+      error.code = 'FONT_HTTP_ERROR'
+      throw error
+    }
+
+    const fontBuffer = await response.arrayBuffer()
+    validateFontBuffer(fontBuffer)
+
+    const fontFace = new FontFace(fontName, fontBuffer, {
       style: 'normal',
       weight: '400'
     })
@@ -1145,7 +1211,15 @@ const handleFontFamilyChange = async (value) => {
         }
       }
     } catch (error) {
-      ElMessage.error(`字体 ${selectedFont.label} 加载失败`)
+      let detail = '网络异常或字体文件不可用'
+      if (error?.code === 'UNSUPPORTED_VHEA_VERSION') {
+        detail = '字体文件不符合浏览器 WebFont 规范（vhea 表版本异常）'
+      } else if (error?.code === 'UNSUPPORTED_FONT_FORMAT' || error?.code === 'INVALID_FONT_BINARY') {
+        detail = '字体文件格式无效'
+      } else if (error?.code === 'FONT_HTTP_ERROR') {
+        detail = error.message
+      }
+      ElMessage.error(`字体 ${selectedFont.label} 加载失败：${detail}`)
       // 恢复到之前的字体
       if (currentElement.value) {
         formData.fontFamily = currentElement.value.fontFamily
@@ -1550,6 +1624,43 @@ onUnmounted(() => {
   background-color: #f5f5f5;
   padding: 0 8px !important;
   height: 28px;
+}
+
+.font-select-wrapper {
+  position: relative;
+}
+
+.font-select-wrapper :deep(.figma-select .el-input__wrapper) {
+  padding-right: 26px !important;
+}
+
+.font-select-loading-indicator {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  color: #909399;
+  z-index: 2;
+}
+
+.font-select-loading-indicator i {
+  font-size: 14px;
+  animation: font-select-spin 0.9s linear infinite;
+}
+
+@keyframes font-select-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 :deep(.figma-select .el-input__wrapper:hover) {
