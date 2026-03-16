@@ -293,11 +293,6 @@ const onDrop = (e, targetLayer) => {
 
 const onPanelDrop = (e) => {
   e.preventDefault()
-  // 处理放置在面板空白处的情况（移动到顶层末尾）
-  if (draggingId.value && !dragOverId.value) {
-    const core = getCore()
-    // 暂时未实现移动到根节点的逻辑，或者复用 reorderLayer
-  }
   clearDragState()
 }
 
