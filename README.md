@@ -83,22 +83,33 @@
 
 ## ⌨️ 快捷键指南
 
-| 功能类别 | 功能名称 | Windows                  | macOS                   |
-| :------- | :------- | :----------------------- | :---------------------- |
-| **编辑** | 撤销     | `Ctrl + Z`               | `Cmd + Z`               |
-|          | 恢复     | `Ctrl + Shift + Z` / `Y` | `Cmd + Shift + Z` / `Y` |
-|          | 复制     | `Ctrl + C`               | `Cmd + C`               |
-|          | 粘贴     | `Ctrl + V`               | `Cmd + V`               |
-|          | 快速复制 | `Ctrl + D`               | `Cmd + D`               |
-|          | 删除     | `Delete` / `Backspace`   | `Delete` / `Backspace`  |
-|          | 全选     | `Ctrl + A`               | `Cmd + A`               |
-| **组合** | 编组     | `Ctrl + G`               | `Cmd + G`               |
-|          | 解组     | `Ctrl + Shift + G`       | `Cmd + Shift + G`       |
-| **视图** | 缩放     | `Ctrl + 滚轮`            | `Cmd + 滚轮`            |
-|          | 抓手移动 | `Space + 拖拽`           | `Space + 拖拽`          |
-|          | 重置视图 | `Ctrl + 0`               | `Cmd + 0`               |
-|          | 标尺开关 | `Shift + R`              | `Shift + R`             |
-| **文件** | 保存     | `Ctrl + S`               | `Cmd + S`               |
+| 功能类别 | 功能名称   | Windows                | macOS                 |
+| :------- | :--------- | :--------------------- | :-------------------- |
+| **编辑** | 撤销       | `Ctrl + Z`             | `Cmd + Z`             |
+|          | 恢复       | `Ctrl + Shift + Z / Y` | `Cmd + Shift + Z / Y` |
+|          | 复制       | `Ctrl + C`             | `Cmd + C`             |
+|          | 粘贴       | `Ctrl + V`             | `Cmd + V`             |
+|          | 快速复制   | `Ctrl + D`             | `Cmd + D`             |
+|          | 删除       | `Delete / Backspace`   | `Delete / Backspace`  |
+|          | 全选       | `Ctrl + A`             | `Cmd + A`             |
+| **组合** | 编组       | `Ctrl + G`             | `Cmd + G`             |
+|          | 解组       | `Ctrl + Shift + G`     | `Cmd + Shift + G`     |
+| **视图** | 放大       | `Ctrl + +`             | `Cmd + +`             |
+|          | 缩小       | `Ctrl + -`             | `Cmd + -`             |
+|          | 重置视图   | `Ctrl + 0`             | `Cmd + 0`             |
+|          | 抓手移动   | `Space + 拖拽`         | `Space + 拖拽`        |
+|          | 微调位移   | `方向键`               | `方向键`              |
+|          | 快速微调   | `Shift + 方向键`       | `Shift + 方向键`      |
+| **工具** | 选择模式   | `V / Esc`              | `V / Esc`             |
+|          | 移动模式   | `H`                    | `H`                   |
+|          | 钢笔工具   | `P`                    | `P`                   |
+|          | 矩形工具   | `R`                    | `R`                   |
+|          | 圆形工具   | `O`                    | `O`                   |
+|          | 菱形工具   | `D`                    | `D`                   |
+|          | 直线工具   | `L`                    | `L`                   |
+|          | 箭头工具   | `A`                    | `A`                   |
+|          | Frame 工具 | `F`                    | `F`                   |
+|          | 文字工具   | `T`                    | `T`                   |
 
 ## 🚀 快速开始
 
