@@ -82,6 +82,24 @@
       </div>
       <property-panel />
     </el-aside>
+
+    <el-tour
+      v-model="tourVisible"
+      :z-index="10030"
+      :prev-button-props="{ children: '上一步' }"
+      :next-button-props="{ children: '下一步' }"
+      :finish-button-props="{ children: '完成引导' }"
+      @close="handleTourClose"
+    >
+      <el-tour-step
+        v-for="step in tourSteps"
+        :key="step.target"
+        :target="step.target"
+        :title="step.title"
+        :description="step.description"
+        :placement="step.placement"
+      />
+    </el-tour>
   </el-container>
 </template>
 
@@ -110,7 +128,54 @@ const isRightCollapsed = ref(false)
 const activeTab = ref('layers') // 'layers' | 'resources' | 'import'
 const modeToastVisible = ref(false)
 const modeToastText = ref('')
+const tourVisible = ref(false)
+const tourSteps = [
+  {
+    target: '.panel-tabs',
+    title: '工作区切换',
+    description: '在图层、资源、导入之间切换，管理内容与素材。',
+    placement: 'right'
+  },
+  {
+    target: '.page-list-panel',
+    title: '页面管理',
+    description: '这里可以新建、重命名、复制和切换页面，适合多画板创作。',
+    placement: 'right'
+  },
+  {
+    target: '.layer-panel',
+    title: '图层结构',
+    description: '按层级管理元素，支持拖拽排序、锁定、显隐和编组操作。',
+    placement: 'right'
+  },
+  {
+    target: '.toolbar-container',
+    title: '核心工具栏',
+    description: '常用绘图工具、撤销重做、图片插入与标尺都在这里。',
+    placement: 'bottom'
+  },
+  {
+    target: '.main-content',
+    title: '主画布区域',
+    description: '在画布中进行绘制、编辑与布局操作。',
+    placement: 'left'
+  },
+  {
+    target: '.right-aside',
+    title: '属性面板',
+    description: '选中元素后可在这里精细调整样式、文本、对齐与导出。',
+    placement: 'left'
+  },
+  {
+    target: '.shortcut-guide-container',
+    title: '快捷键指南',
+    description: '点击这里可展开快捷键面板，快速熟悉常用操作。',
+    placement: 'top'
+  }
+]
 let modeToastTimer = null
+let tourAutoOpenTimer = null
+const TOUR_STORAGE_KEY = 'sung-drawing-tour-completed'
 
 const modeToastMap = {
   select: { label: '选择模式', key: 'V / Esc' },
@@ -143,6 +208,17 @@ const openSettings = () => {
   settingsPanelRef.value?.open()
 }
 
+const startTour = () => {
+  isCollapsed.value = false
+  isRightCollapsed.value = false
+  activeTab.value = 'layers'
+  tourVisible.value = true
+}
+
+const handleTourClose = () => {
+  localStorage.setItem(TOUR_STORAGE_KEY, '1')
+}
+
 const toggleRightCollapse = () => {
   isRightCollapsed.value = !isRightCollapsed.value
 }
@@ -166,21 +242,29 @@ const handleHistoryChange = (state) => {
 }
 
 onMounted(() => {
-  // 监听历史记录变化
   const checkCore = setInterval(() => {
     const core = canvasAreaRef.value?.getCanvasCore()
     if (core) {
       clearInterval(checkCore)
-      // 注入回调
       core.callbacks.onHistoryChange = handleHistoryChange
     }
   }, 100)
+
+  if (!localStorage.getItem(TOUR_STORAGE_KEY)) {
+    tourAutoOpenTimer = setTimeout(() => {
+      startTour()
+    }, 600)
+  }
 })
 
 onUnmounted(() => {
   if (modeToastTimer) {
     clearTimeout(modeToastTimer)
     modeToastTimer = null
+  }
+  if (tourAutoOpenTimer) {
+    clearTimeout(tourAutoOpenTimer)
+    tourAutoOpenTimer = null
   }
 })
 
