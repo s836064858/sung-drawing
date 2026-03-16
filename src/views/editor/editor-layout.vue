@@ -67,6 +67,9 @@
       <size-info />
       <ai-toolbar />
       <shortcut-guide />
+      <transition name="mode-toast-fade">
+        <div v-if="modeToastVisible" class="mode-toast">{{ modeToastText }}</div>
+      </transition>
     </el-main>
 
     <div class="right-collapsed-brand" v-show="isRightCollapsed" @click="toggleRightCollapse">
@@ -83,7 +86,7 @@
 </template>
 
 <script setup>
-import { ref, provide, onMounted } from 'vue'
+import { ref, provide, onMounted, onUnmounted } from 'vue'
 import PageList from './components/panels/left/page-list.vue'
 import LayerPanel from './components/panels/left/layer-panel.vue'
 import ResourcePanel from './components/panels/left/resource-panel.vue'
@@ -105,6 +108,32 @@ const canRedo = ref(false)
 const isCollapsed = ref(false)
 const isRightCollapsed = ref(false)
 const activeTab = ref('layers') // 'layers' | 'resources' | 'import'
+const modeToastVisible = ref(false)
+const modeToastText = ref('')
+let modeToastTimer = null
+
+const modeToastMap = {
+  select: { label: '选择模式', key: 'V / Esc' },
+  move: { label: '移动模式', key: 'H' },
+  pen: { label: '钢笔工具', key: 'P' },
+  rect: { label: '矩形工具', key: 'R' },
+  ellipse: { label: '圆形工具', key: 'O' },
+  diamond: { label: '菱形工具', key: 'D' },
+  line: { label: '直线工具', key: 'L' },
+  arrow: { label: '箭头工具', key: 'A' },
+  frame: { label: 'Frame 工具', key: 'F' },
+  text: { label: '文字工具', key: 'T' }
+}
+
+const showModeToast = (message) => {
+  modeToastText.value = message
+  modeToastVisible.value = true
+  if (modeToastTimer) clearTimeout(modeToastTimer)
+  modeToastTimer = setTimeout(() => {
+    modeToastVisible.value = false
+    modeToastTimer = null
+  }, 1100)
+}
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
@@ -122,7 +151,13 @@ const toggleRightCollapse = () => {
 provide('getCanvasCore', () => canvasAreaRef.value?.getCanvasCore())
 
 const handleModeChange = (mode) => {
+  if (activeTool.value === mode) return
   activeTool.value = mode
+
+  const modeInfo = modeToastMap[mode]
+  if (!modeInfo) return
+
+  showModeToast(`已切换到${modeInfo.label} (${modeInfo.key})`)
 }
 
 const handleHistoryChange = (state) => {
@@ -142,12 +177,18 @@ onMounted(() => {
   }, 100)
 })
 
+onUnmounted(() => {
+  if (modeToastTimer) {
+    clearTimeout(modeToastTimer)
+    modeToastTimer = null
+  }
+})
+
 const handleToolChange = (event) => {
   const canvasCore = canvasAreaRef.value?.getCanvasCore()
   if (!canvasCore) return
 
   if (event.type === 'mode') {
-    activeTool.value = event.value
     canvasCore.setMode(event.value)
   } else if (event.type === 'action') {
     if (event.value === 'add-image') {
@@ -248,6 +289,33 @@ const handleToolChange = (event) => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.mode-toast {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.82);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 10010;
+  pointer-events: none;
+  backdrop-filter: blur(3px);
+  white-space: nowrap;
+}
+
+.mode-toast-fade-enter-active,
+.mode-toast-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.mode-toast-fade-enter-from,
+.mode-toast-fade-leave-to {
+  opacity: 0;
 }
 
 .editor-layout {
