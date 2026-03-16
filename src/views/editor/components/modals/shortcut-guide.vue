@@ -25,8 +25,11 @@
           <div class="shortcut-list">
             <div class="shortcut-item" v-for="item in commonShortcuts" :key="item.keys">
               <span class="label">{{ item.label }}</span>
-              <div class="keys-wrapper">
-                <span class="key" v-for="(key, index) in item.keys" :key="index">{{ key }}</span>
+              <div class="keys-area">
+                <div class="keys-wrapper">
+                  <span class="key" v-for="(key, index) in item.keys" :key="index">{{ key }}</span>
+                </div>
+                <span class="key-hint" v-if="item.hint">{{ item.hint }}</span>
               </div>
             </div>
           </div>
@@ -39,8 +42,11 @@
           <div class="shortcut-list">
             <div class="shortcut-item" v-for="item in toolShortcuts" :key="item.keys">
               <span class="label">{{ item.label }}</span>
-              <div class="keys-wrapper">
-                <span class="key" v-for="(key, index) in item.keys" :key="index">{{ key }}</span>
+              <div class="keys-area">
+                <div class="keys-wrapper">
+                  <span class="key" v-for="(key, index) in item.keys" :key="index">{{ key }}</span>
+                </div>
+                <span class="key-hint" v-if="item.hint">{{ item.hint }}</span>
               </div>
             </div>
             <div class="empty-item" v-if="toolShortcuts.length === 0">
@@ -98,7 +104,9 @@ const commonShortcuts = computed(() => [
   { keys: [modKey.value, '-'], label: '缩小' },
   { keys: [modKey.value, '0'], label: '重置缩放' },
   { keys: [isMac.value ? '⌫' : 'Del'], label: '删除' },
-  { keys: ['Space'], label: '抓手工具' }
+  { keys: ['Space'], label: '抓手工具' },
+  { keys: ['↑', '↓', '←', '→'], label: '微调位移（1px）', hint: '方向键' },
+  { keys: [shiftKey.value, '↑', '↓', '←', '→'], label: '微调位移（10px）', hint: 'shift + 方向键' }
 ])
 
 const toolShortcuts = []
@@ -232,7 +240,7 @@ const toolShortcuts = []
 
 .shortcut-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   font-size: 13px;
   color: #606266;
@@ -249,6 +257,19 @@ const toolShortcuts = []
 .keys-wrapper {
   display: flex;
   gap: 4px;
+  justify-content: flex-end;
+}
+
+.keys-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.key-hint {
+  font-size: 11px;
+  color: #c0c4cc;
 }
 
 .key {
